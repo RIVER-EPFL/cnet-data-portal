@@ -61,7 +61,7 @@ library(rhandsontable)
 library(promises)
 library(future)
 
-
+hrbrthemes::import_roboto_condensed()
 
 ## Load Secret Global Variables ###################################################
 source('./secrets.R')

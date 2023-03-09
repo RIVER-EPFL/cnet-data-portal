@@ -1,33 +1,35 @@
-install.packages(
-  pkgs = c("shinyjs", 
-           "shinyWidgets", 
-           "shinybusy", 
-           "shinycssloaders", 
-           "sass", 
-           "jsonlite", 
-           "readr", 
-           "stringr", 
-           "ggplot2", 
-           "Cairo", 
-           "data.table", 
-           "lubridate", 
-           "forcats", 
-           "tidyr", 
-           "magrittr", 
-           "dplyr",
-           "DBI",
-           "RMySQL",
-           "pool",
-           "sodium",
-           "DT",
-           "rhandsontable",
-           "bigleaf",
-           "promises",
-           "future"
-  ),
-  repos = 'https://cran.rstudio.com/'
-)
+install.packages("remotes")
+library(remotes)
 
-# Install specific versions
-# dbplyr 2 is adding a `` to the SELECT query which make the query invalid
-devtools::install_version('dbplyr', version='1.4.4', repos='https://cran.rstudio.com/', upgrade = 'never')
+install_version("Cairo", "1.6.0")
+install_version("data.table", "1.13.4")
+install_version("DBI", "1.1.0")
+install_version("dbplyr", "2.0.0")
+install_version("dplyr", "1.0.2")
+install_version("DT", "0.16")
+install_version("forcats", "0.5.0")
+install_version("future", "1.21.0")
+install_version("ggplot2", "3.3.2")
+install_version("hrbrthemes", "0.8.0")
+install_version("jsonlite", "1.7.2")
+install_version("lubridate", "1.7.9.2")
+install_version("magrittr", "2.0.1")
+install_version("pool", "0.1.5")
+install_version("promises", "1.1.1")
+install_version("purrr", "0.3.4")
+install_version("Rcpp", "1.0.5")
+install_version("readr", "1.4.0")
+install_version("rhandsontable", "0.3.7")
+install_version("RMySQL", "0.10.25")
+install_version("sass", "0.2.0")
+install_version("shinybusy", "0.2.2")
+install_version("shinycssloaders", "1.0.0")
+install_version("shinyjs", "2.0.0")
+install_version("shinyWidgets", "0.5.4")
+install_version("shinyvalidate", "0.1.2")
+install_version("sodium", "1.1")
+install_version("stringr", "1.4.0")
+install_version("tidyr", "1.1.2")
+install_version("waiter", "0.1.3")
+install_version("xlsx", "0.6.5")
+install_version("shiny", "1.5.0")

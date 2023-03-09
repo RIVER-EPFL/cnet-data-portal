@@ -1,0 +1,58 @@
+version: "3"
+services:
+  traefik:
+    container_name: traefik
+    image: traefik:v2.9.6
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+    networks:
+      - web
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  nomis-portal:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nomis_portal.rule=Host(`nomis.local`)"
+      - "traefik.http.services.nomis_portal.loadbalancer.server.port=3838"
+    environment:
+      NOMIS_ENV: production
+      NOMIS_DB_HOSTNAME: nomis-db
+      NOMIS_DB_PORT: 3306
+      NOMIS_DB_USERNAME: nomis_portal
+      NOMIS_DB_PASSWORD: nomis
+      NOMIS_DB_NAME: nomis_db
+    networks:
+      - web
+    ports:
+      - "3838:3838"
+    depends_on:
+      - nomis-db
+
+  nomis-db:
+    image: mariadb:10.2.41
+    environment:
+      MYSQL_ROOT_PASSWORD: nomisroot
+      MYSQL_DATABASE: nomis_db
+      MYSQL_USER: nomis_portal
+      MYSQL_PASSWORD: nomis
+    ports:
+      - 3306:3306
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    networks:
+      - web
+
+volumes:
+  mariadb-data:
+
+networks:
+  web:
+    driver: bridge
