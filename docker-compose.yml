@@ -14,44 +14,50 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
 
-  nomis-portal:
-    build:
-      context: .
-      dockerfile: Dockerfile
+  metalp-portal:
+    image: metalp:latest
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.nomis_portal.rule=Host(`nomis.local`)"
-      - "traefik.http.services.nomis_portal.loadbalancer.server.port=3838"
+      - "traefik.http.routers.metalp_portal.rule=Host(`metalp.local`)"
+      - "traefik.http.services.metalp_portal.loadbalancer.server.port=3838"
     environment:
-      NOMIS_ENV: production
-      NOMIS_DB_HOSTNAME: nomis-db
-      NOMIS_DB_PORT: 3306
-      NOMIS_DB_USERNAME: nomis_portal
-      NOMIS_DB_PASSWORD: nomis
-      NOMIS_DB_NAME: nomis_db
+      METALP_ENV: production
+      METALP_DB_HOSTNAME: metalp-db
+      METALP_DB_PORT: 3306
+      METALP_DB_USERNAME: metalp
+      METALP_DB_PASSWORD: metalp
+      METALP_DB_NAME: metalp_db
+      METALP_NOREPLY_ADDRESS: metalp-noreply@example.org
+      METALP_TO_ADDRESS: metalp-noreply@example.org
     networks:
       - web
+    volumes:
+      - ./data:/srv/shiny-server/data
+      - ./db_backups:/srv/shiny-server/db_backups
     ports:
       - "3838:3838"
     depends_on:
-      - nomis-db
+      - metalp-db
 
-  nomis-db:
+  metalp-db:
     image: mariadb:10.2.41
     environment:
-      MYSQL_ROOT_PASSWORD: nomisroot
-      MYSQL_DATABASE: nomis_db
-      MYSQL_USER: nomis_portal
-      MYSQL_PASSWORD: nomis
+      MYSQL_ROOT_PASSWORD: metalproot
+      MYSQL_DATABASE: metalp_db
+      MYSQL_USER: metalp
+      MYSQL_PASSWORD: metalp
     ports:
       - 3306:3306
     volumes:
-      - mariadb-data:/var/lib/mysql
+      - metalp-mariadb-data:/var/lib/mysql
     networks:
       - web
 
 volumes:
-  mariadb-data:
+  metalp-mariadb-data:
 
 networks:
   web:
