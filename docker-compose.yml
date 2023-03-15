@@ -15,9 +15,9 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
 
   metalp-portal:
-   build:
-     context: .
-     dockerfile: Dockerfile
+    build:
+      context: .
+      dockerfile: Dockerfile
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.metalp_portal.rule=Host(`metalp.local`)"
