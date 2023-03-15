@@ -4,42 +4,73 @@ This Shiny app is meant to provide an easy interface for the METALP researchers 
 
 ## Dependecies
 
-Main dependencies:
+Core dependencies and installation steps are defined in the `Dockerfile` assuming a Ubuntu installation.
+
 - R version 4.0.2
 - Node.js (tested version: 14.9.0)
 - Terser.js (tested version: 5.3.0)
 
-R packages:
-- RMySQL_0.10.20
-- bigleaf_0.7.1
-- sodium_1.1
-- purrr_0.3.4
-- readr_1.4.0
-- sass_0.3.1
-- future_1.20.1
-- promises_1.1.1
-- rhandsontable_0.3.7
-- DT_0.16
-- dbplyr_1.4.4
-- pool_0.1.4.3
-- DBI_1.1.0
-- dplyr_1.0.2
-- magrittr_1.5
-- tidyr_1.1.2
-- forcats_0.5.0
-- lubridate_1.7.9
-- data.table_1.13.2
-- Cairo_1.5-12.2
-- ggplot2_3.3.2
-- stringr_1.4.0
-- jsonlite_1.7.1
-- shinycssloaders_1.0.0
-- shinybusy_0.2.2
-- shinyWidgets_0.5.4
-- shinyjs_2.0.0
-- shiny_1.5.0
+`renv` is used to manage package versions.
 
-## Installation
+## Getting started
+
+### Docker Compose
+
+Using the supplied `docker-compose.yml` file, a metalp portal, MariaDB database and Traefik reverse proxy will start, simulating a complete deployment. The `Makefile` can be used to build and deploy, using the environment variables listed below in a populated `.env` file to customise the backend.
+
+#### Environment variables
+
+The environment variables are as follows:
+
+```
+METALP_ENV               // Whether the application is in `production` or `development`
+METALP_DB_NAME           // The name of the database in MariaDB
+METALP_DB_HOSTNAME       // The hostname of the MariaDB server
+METALP_DB_PORT           // The port of the MariaDB server
+METALP_DB_USERNAME       // The username the portal uses to access MariaDB
+METALP_DB_PASSWORD       // The password the portal uses to access MariaDB
+METALP_NOREPLY_ADDRESS   // A noreply email address to send from
+METALP_TO_ADDRESS        // The email for contacting the site maintainer
+
+---- Only needed if the MariaDB container is being used
+METALP_DB_ROOT_PASSWORD  // The root password of the MySQL container
+```
+
+Note: If using a remote database, the docker compose file should be altered to disable
+the MariaDB container and remove its dependence from the metalp portal container.
+
+
+#### Volume mapping
+
+The included `docker-compose.yml` maps the data, and db_backups
+folders to the local filesystem. The folder `data` should contain the data
+assets required to serve the the map datawithin the interface, and
+the `db_backups` directory holds the database dumps.
+
+```
+- ./data:/srv/shiny-server/data
+- ./db_backups:/srv/shiny-server/db_backups
+```
+
+#### Building and running
+
+```bash
+make run
+```
+
+By default, the reverse proxy will start on http port 80, and listen for connections to http://metalp.local. Add this hostname as a new line to your `/etc/hosts` system file, addressing your machine's local IP (`127.0.0.1`).
+
+```bash
+# Static table lookup for hostnames.
+
+127.0.0.1 metalp.local
+```
+
+You should be able to access the site at [http://metalp.local](http://metalp.local).
+
+### Ubuntu
+
+The `Dockerfile` is built upon a Ubuntu image, therefore the installation steps for all dependencies can be follow from the instructions defined within.
 
 ### R and Rstudio
 You need to install R and we recommend to use Rstudio as well. You can get the latest version of R or the recommend version forthis app on the CRAN website https://cran.r-project.org/ and Rstutio from their website https://rstudio.com/products/rstudio/download/.

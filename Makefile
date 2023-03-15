@@ -1,7 +1,3 @@
-APPLICATION_NAME ?= metalp-data-portal
- 
-build:
-	docker build --tag ${APPLICATION_NAME} .
 run:
-	docker compose up 
-
+	docker-compose build --pull
+	docker-compose up -d --remove-orphans

@@ -9,23 +9,27 @@ rm -f secrets.R
 
 # Add environment vars from env into R config. This is done
 # due to RShiny not passing system env vars to application
-printf "ENV <- '%s'\n" "$METALP_ENV" >> secrets.R
-printf "MY_DB_NAME <- '%s'\n" "$METALP_DB_NAME" >> secrets.R
-printf "MY_DB_HOST <- '%s'\n" "$METALP_DB_HOSTNAME" >> secrets.R
-printf "MY_DB_PORT <- %s\n" "$METALP_DB_PORT" >> secrets.R
-printf "MY_DB_USER <- '%s'\n" "$METALP_DB_USERNAME" >> secrets.R
-printf "MY_DB_PWD <- '%s'\n" "$METALP_DB_PASSWORD" >> secrets.R
-printf "NOREPLY_ADDRESS <- '%s'\n" "$METALP_NOREPLY_ADDRESS" >> secrets.R
-printf "TO_ADDRESS <- '%s'\n" "$METALP_TO_ADDRESS" >> secrets.R
+cat <<EOF > secrets.R
+ENV <- '$METALP_ENV'
+MY_DB_NAME <- '$METALP_DB_NAME'
+MY_DB_HOST <- '$METALP_DB_HOSTNAME'
+MY_DB_PORT <- $METALP_DB_PORT
+MY_DB_USER <- '$METALP_DB_USERNAME'
+MY_DB_PWD <- '$METALP_DB_PASSWORD'
+NOREPLY_ADDRESS <- '$METALP_NOREPLY_ADDRESS'
+TO_ADDRESS <- '$METALP_TO_ADDRESS'
+EOF
 
 # Delete any database dump config file and recreate from ENV vars
 rm -f .my.cnf
 
-printf "[client]\n" >> .my.cnf
-printf "user='%s'\n" "$METALP_DB_USERNAME" >> .my.cnf
-printf "password='%s'\n" "$METALP_DB_PASSWORD" >> .my.cnf
-printf "host='%s'\n" "$METALP_DB_HOSTNAME" >> .my.cnf
-printf "port='%s'\n" "$METALP_DB_PORT" >> .my.cnf
+cat <<EOF > .my.cnf
+[client]\n" >> .my.cnf
+user='$METALP_DB_USERNAME'
+password='$METALP_DB_PASSWORD'
+host='$METALP_DB_HOSTNAME'
+port='$METALP_DB_PORT'
+EOF
 
 # Run RShiny
 /usr/bin/shiny-server
