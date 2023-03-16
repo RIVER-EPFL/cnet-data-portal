@@ -4,9 +4,6 @@
 # and creates a config file which is read by the application on
 # initialisation, then starts the application
 
-# Delete any existing app config file and recreate from ENV vars
-rm -f secrets.R
-
 # Add environment vars from env into R config. This is done
 # due to RShiny not passing system env vars to application
 cat <<EOF > secrets.R
@@ -20,9 +17,7 @@ NOREPLY_ADDRESS <- '$METALP_NOREPLY_ADDRESS'
 TO_ADDRESS <- '$METALP_TO_ADDRESS'
 EOF
 
-# Delete any database dump config file and recreate from ENV vars
-rm -f .my.cnf
-
+# Write database dump config file
 cat <<EOF > .my.cnf
 [client]\n" >> .my.cnf
 user='$METALP_DB_USERNAME'
