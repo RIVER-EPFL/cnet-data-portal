@@ -12,3 +12,5 @@ restart.txt
 
 # keep empty folders
 !.keep
+
+.env

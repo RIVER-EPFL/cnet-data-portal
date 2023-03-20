@@ -1,0 +1,59 @@
+version: "3"
+services:
+  traefik:
+    container_name: traefik
+    image: traefik:v2.9.6
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+    networks:
+      - web
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  metalp-portal:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.metalp_portal.rule=Host(`metalp.local`)"
+      - "traefik.http.services.metalp_portal.loadbalancer.server.port=3838"
+    environment:
+      METALP_ENV: ${METALP_ENV}
+      METALP_DB_HOSTNAME: ${METALP_DB_HOSTNAME}
+      METALP_DB_PORT: ${METALP_DB_PORT}
+      METALP_DB_USERNAME: ${METALP_DB_USERNAME}
+      METALP_DB_PASSWORD: ${METALP_DB_PASSWORD}
+      METALP_DB_NAME: ${METALP_DB_NAME}
+      METALP_NOREPLY_ADDRESS: ${METALP_NOREPLY_ADDRESS}
+      METALP_TO_ADDRESS: ${METALP_TO_ADDRESS}
+    networks:
+      - web
+    volumes:
+      - ./data:/srv/shiny-server/data
+      - ./db_backups:/srv/shiny-server/db_backups
+    depends_on:
+      - metalp-db
+
+  metalp-db:
+    image: mariadb:10.2.41
+    environment:
+      MYSQL_ROOT_PASSWORD: ${METALP_DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${METALP_DB_NAME}
+      MYSQL_USER: ${METALP_DB_USERNAME}
+      MYSQL_PASSWORD: ${METALP_DB_PASSWORD}
+    volumes:
+      - metalp-mariadb-data:/var/lib/mysql
+    networks:
+      - web
+
+volumes:
+  metalp-mariadb-data:
+
+networks:
+  web:
+    driver: bridge

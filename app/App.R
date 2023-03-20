@@ -62,7 +62,6 @@ library(promises)
 library(future)
 
 
-
 ## Load Secret Global Variables ###################################################
 source('./secrets.R')
 

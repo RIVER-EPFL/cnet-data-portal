@@ -9,8 +9,8 @@ file.remove(list.files('./www', pattern = 'main.css|metalpdataportal.js', full.n
 # Compile CSS from Sass
 cssfile <- paste0(gsub('[- :]', '', Sys.time()), '-main.css')
 sass::sass(
-  sass::sass_file('assets/sass/main.scss'), 
-  output = paste0('www/', cssfile),
+  sass::sass_file('./assets/sass/main.scss'),
+  output = paste0('./www/', cssfile),
   options = sass::sass_options(output_style = 'compressed')
 )
 
