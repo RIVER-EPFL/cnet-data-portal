@@ -327,8 +327,8 @@ portalActions <- function(input, output, session) {
     uploadedFile <- input$upload
     # Check requirements
     # Must be a zip file
-    if (uploadedFile$type != 'application/zip') {
-      showNotification('Please upload a zip archive file.', duration = NULL, type = 'error')
+    if (!str_detect(uploadedFile$type, '^application/(x-)?zip(-compressed)?$')) {
+      showNotification(str_glue('Please upload a zip archive file. Uploaded file type: {type}', type = uploadedFile$type), duration = NULL, type = 'error')
       # Remove spinner
       remove_modal_spinner()
       return()
