@@ -768,7 +768,7 @@ calcCH4 <- function(df, pool, labTemp = 'default', labPa = 'default', ...) {
     if (!any(is.na(c(ch4_dry, water_temp_k, bp, ch4_in_sa, gas_const_r_mol, h_ch4_29815k, labParams$labTemp, labParams$labPa)))) {
       # Calculate intermediate variables
       h_ch4_t_eq <- h_ch4_29815k * exp(1750 * (1/labParams$labTemp - 1/298.15))
-      A <- ch4_dry * labParams$labPa * 101.325 * water_temp_k - bp * (ch4_in_sa * labParams$labTemp * 10^3)
+      A <- ch4_dry * (0.957237 * 1013.25) * 101.325 * water_temp_k - bp * (ch4_in_sa * labParams$labTemp * 10^3)
       B <- h_ch4_t_eq * gas_const_r_mol * 10 * water_temp_k + bp
       
       dividend <- A * B
