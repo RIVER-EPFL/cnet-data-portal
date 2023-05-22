@@ -18,12 +18,12 @@ TO_ADDRESS <- '$METALP_TO_ADDRESS'
 EOF
 
 # Write database dump config file
-cat <<EOF > .my.cnf
-[client]\n" >> .my.cnf
-user='$METALP_DB_USERNAME'
-password='$METALP_DB_PASSWORD'
-host='$METALP_DB_HOSTNAME'
-port='$METALP_DB_PORT'
+cat <<EOF > ~/.my.cnf
+[client]
+user=$METALP_DB_USERNAME
+password=$METALP_DB_PASSWORD
+host=$METALP_DB_HOSTNAME
+port=$METALP_DB_PORT
 EOF
 
 # Run RShiny
