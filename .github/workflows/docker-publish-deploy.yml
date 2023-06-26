@@ -5,7 +5,7 @@ name: Docker
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master", "develop" ]
     # Publish semver tags as releases.
     tags: [ 'v*.*.*' ]
   pull_request:
@@ -87,3 +87,13 @@ jobs:
         # This step uses the identity token to provision an ephemeral certificate
         # against the sigstore community Fulcio instance.
         run: echo "${{ steps.meta.outputs.tags }}" | xargs -I {} cosign sign {}@${{ steps.build-and-push.outputs.digest }}
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: EPFL-ENAC/epfl-enac-deploy-action@main
+        with:
+          ENAC_IT4R_CD_environment: "test"
+          ENAC_IT4R_CD_deployment_id: ${{ secrets.DEPLOYMENT_TEST_ID }}
+          ENAC_IT4R_CD_deployment_secret: ${{ secrets.DEPLOYMENT_TEST_SECRET }}
