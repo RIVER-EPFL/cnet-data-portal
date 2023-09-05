@@ -1,12 +1,10 @@
-FROM ghcr.io/river-epfl/metalp-data-portal:v1.0.0
+FROM ghcr.io/river-epfl/metalp-data-portal:v1.0.2
 USER root
 
-# Delete the example application, copy dependency lock file and install R dependencies
-RUN rm -rf /srv/shiny-server/*
-COPY packages_installation.R renv.lock /srv/shiny-server/
 ARG MAKE="make -j2"
 WORKDIR /srv/shiny-server/
-RUN R -f packages_installation.R
+RUN R -e "install.packages('RMariaDB')"
+RUN apt-get install -y libmariadbclient-dev
 
 
 # Copy the rest of the application. Doing it in this order allows changes to the app folder
@@ -18,7 +16,7 @@ RUN chown -R shiny:shiny /srv/shiny-server/ \
   && chown -R shiny:shiny /var/lib/shiny-server \
   && R -f assets_compilation.R
 
-  # Run as user shiny instead of root and expose the port
+# Run as user shiny instead of root and expose the port
 USER shiny
 EXPOSE 3838
 

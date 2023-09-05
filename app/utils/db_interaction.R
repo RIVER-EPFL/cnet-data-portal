@@ -1,21 +1,22 @@
 ## This script contains all the database queries and connections
 
 ## Database connection ############################################################
+library(RMariaDB)
 
 connectToDB <- function() {
   # Create pool connection
   pool <- dbPool(
-    drv = RMySQL::MySQL(),
+    drv = MariaDB(),
     dbname = MY_DB_NAME,
     host = MY_DB_HOST,
     port = MY_DB_PORT,
     username = MY_DB_USER,
     password = MY_DB_PWD
   )
-  
+
   # Set charset for connection
   dbGetQuery(pool, "SET NAMES 'utf8';")
-  
+
   # Return pool
   return(pool)
 }
@@ -31,10 +32,10 @@ validInputDecorator <- function(f) {
     if (!is.null(input)) {
       if (!is.na(input) & as.character(input) == 'NULL') return(SQL(input))
     }
-    
+
     # Run validation function
     input <- f(input, ...)
-    
+
     # Use oldValue if provided in case of NULL
     if (!is.null(oldValue) & input == SQL('NULL')) {
       oldValue
@@ -48,9 +49,9 @@ validInputDecorator <- function(f) {
 validInputString <- validInputDecorator(
   function(input) {
     if (!is.character(input)) return(SQL('NULL'))
-    
+
     if (input == '' | any(is.na(input)) | length(input) != 1) return(SQL('NULL'))
-    
+
     return(input)
   }
 )
@@ -61,9 +62,9 @@ validInputString <- validInputDecorator(
 validInputDate <- validInputDecorator(
   function(input) {
     if (!is.Date(input)) input <- as_date(input)
-    
+
     if (any(is.na(input)) | length(input) != 1) return(SQL('NULL'))
-    
+
     return(as.character(input))
   }
 )
@@ -74,11 +75,11 @@ validInputDate <- validInputDecorator(
 validInputNumber <- validInputDecorator(
   function(input, int = FALSE) {
     if (!is.numeric(input)) input <- as.numeric(input)
-    
+
     if (any(is.na(input)) | length(input) != 1) return(SQL('NULL'))
-    
+
     if (int & !is.integer(input)) return(as.integer(input))
-    
+
     return(input)
   }
 )
@@ -89,9 +90,9 @@ validInputNumber <- validInputDecorator(
 validInputBool <- validInputDecorator(
   function(input) {
     if (!is.logical(input)) input <- as.numeric(input)
-    
+
     if (any(is.na(input)) | length(input) != 1) return(SQL('NULL'))
-    
+
     return(input)
   }
 )
@@ -121,7 +122,7 @@ sendQueryWithError <- function(pool, query) {
     dbGetQuery(pool, query),
     error = function(e) return(e$message)
   )
-  
+
   # Check if insertion succeed (i.e. empty df)
   # If not return the error message
   if (is.data.frame(result)) {
@@ -143,10 +144,10 @@ getEnumValues <- function(pool, table, column) {
     "SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ?table AND COLUMN_NAME = ?column AND DATA_TYPE = 'enum';",
     table = table, column = column
   )
-  
+
   # Run query
   result <- dbGetQuery(pool, query)
-  
+
   # If not empty, parse the info
   if (nrow(result) == 1) {
     result[1, 1] %>% str_extract_all("(?<=')[^,]+(?=')") %>% unlist()
@@ -161,7 +162,7 @@ getEnumValues <- function(pool, table, column) {
 getMinMaxValues <- function(pool, table, column, ...) {
   # Enquote the column name
   column <- enquo(column)
-  
+
   # Get the min and max values
   pool %>% tbl(table) %>%
     filter(...) %>%
@@ -177,7 +178,7 @@ getMinMaxValues <- function(pool, table, column, ...) {
 countRows <- function(pool, table, ...) {
   # Count the rows
   countDf <- pool %>% tbl(table) %>% filter(...) %>% summarise(nb = n()) %>% collect()
-  
+
   # Return only the count
   countDf$nb
 }
@@ -187,12 +188,12 @@ countRows <- function(pool, table, ...) {
 getRows <- function(pool, table, ..., columns = NULL) {
   # Start query by selecting the table and filtering it
   query <- pool %>% tbl(table) %>% filter(...)
-  
+
   # If some columns are provided, select only them
   if (!is.null(columns)) {
     query %<>% select(all_of(columns))
   }
-  
+
   # Perform query
   query %>% collect()
 }
@@ -230,7 +231,7 @@ deleteRows <- function(pool, table, ids) {
     # Send Query and catch errors
     return(sendQueryWithError(pool, query))
   }
-  
+
   # If error return the error message
   return(error)
 }
@@ -271,7 +272,7 @@ updateOrder <- function(pool, table, ids, order) {
       )
     }
   }
-  
+
   # Return error
   return(str_trim(error))
 }
@@ -295,14 +296,14 @@ loginUser <- function(pool, username) {
 getUsers <- function(pool, columns = NULL) {
   # Initiate query with users table
   query <- pool %>% tbl('users')
-  
+
   # Select columns if needed
   if (!is.null(columns)) {
     query %<>% select(all_of(columns), -password)
   } else {
     query %<>% select(-password)
   }
-  
+
   # Perform query
   query %>% collect()
 }
@@ -317,14 +318,14 @@ createUser <- function(pool, username, password, role = 'sber', active = TRUE, i
   role <- validInputString(role)
   active <- validInputBool(active)
   intern_confirmation <- validInputBool(intern_confirmation)
-  
+
   # Hash password before saving
   if (password != SQL('NULL')) {
     hashedPassword <- sodium::password_store(password)
   } else {
     hashedPassword <- SQL('NULL')
   }
-  
+
   # Create SQL query
   query <- sqlInterpolate(
     pool,
@@ -334,7 +335,7 @@ createUser <- function(pool, username, password, role = 'sber', active = TRUE, i
     username = username, hashedPassword = hashedPassword, role = role,
     active = active, intern_confirmation = intern_confirmation
   )
-  
+
   # Send Query and catch errors
   sendQueryWithError(pool, query)
 }
@@ -348,7 +349,7 @@ updateUser <- function(pool, user, username = '', password = '', role = '', acti
   role <- validInputString(role, user$role)
   active <- validInputBool(active, user$active)
   intern_confirmation <- validInputBool(intern_confirmation, user$intern_confirmation)
-  
+
   # UPdate password only if a new one is provided
   if (password == SQL('NULL')) {
     # Create query without password
@@ -362,7 +363,7 @@ updateUser <- function(pool, user, username = '', password = '', role = '', acti
   } else {
     # Hash the new password
     hashedPassword <- sodium::password_store(password)
-    
+
     # Create query with password
     query <- sqlInterpolate(
       pool,
@@ -372,7 +373,7 @@ updateUser <- function(pool, user, username = '', password = '', role = '', acti
       id = user$id, name = username, password = hashedPassword, role = role, active = active, intern_confirmation = intern_confirmation
     )
   }
-  
+
   # Send Query and catch errors
   sendQueryWithError(pool, query)
 }
@@ -384,17 +385,17 @@ updateUserPWD <- function(pool, username, password) {
   # Check for valid input string
   username <- validInputString(username)
   password <- validInputString(password)
-  
+
   # Get user id
   userID <- pool %>% tbl('users') %>%
     filter(name == username, active == 1) %>%
     head(1) %>% select(id) %>% collect() %>% pull()
-  
+
   # UPdate password only if a new one is provided
   if (password != SQL('NULL') & length(userID) == 1 & !is.na(userID)) {
     # Hash the new password
     hashedPassword <- sodium::password_store(password)
-    
+
     # Create query to update password
     query <- sqlInterpolate(
       pool,
@@ -408,7 +409,7 @@ updateUserPWD <- function(pool, username, password) {
       sendQueryWithError(pool, query)
     )
   }
-  
+
   # Return error
   'Error: Could not update password. Missing/invalid password/user id.'
 }
@@ -427,7 +428,7 @@ createData <- function(pool, station, DATE_reading, TIME_reading, Convert_to_GMT
   TIME_reading <- validInputString(TIME_reading)
   Convert_to_GMT <- validInputString(Convert_to_GMT)
   TIME_reading_GMT <- validInputString(TIME_reading_GMT)
-  
+
   # Create SQL query
   query <- sqlInterpolate(
     pool,
@@ -437,7 +438,7 @@ createData <- function(pool, station, DATE_reading, TIME_reading, Convert_to_GMT
     station = station, DATE_reading = DATE_reading, TIME_reading = TIME_reading,
     Convert_to_GMT = Convert_to_GMT, TIME_reading_GMT = TIME_reading_GMT
   )
-  
+
   # Send Query and catch errors
   sendQueryWithError(pool, query)
 }
@@ -465,29 +466,29 @@ updateData <- function(pool, id, columns, values) {
       values[[i]] <- SQL('NULL')
     }
   }
-  
+
   # Build base sql query
   sql <- 'UPDATE data SET ?values WHERE id = ?id;'
-  
+
   # Build complete query to interpolate
   sql <- sub("\\?values", paste("?column", 1:length(columns), " = ?value", 1:length(values), sep="", collapse=","), sql)
-  
+
   # Quote column names
   columns <- lapply(columns, function(column) {
     dbQuoteIdentifier(pool, column)
   })
-  
+
   # Set variables names
   names(columns) <- paste0("column", 1:length(columns))
   names(values) <- paste0("value", 1:length(values))
   names(id) <- 'id'
-  
+
   # Create variables list
   vars <- c(id, columns, values)
-  
+
   # Interpolate SQL
   query <- sqlInterpolate(pool, sql, .dots=vars)
-  
+
   # Send Query and catch errors
   sendQueryWithError(pool, query)
 }
@@ -500,19 +501,19 @@ getDates <- function(pool, ..., descending = FALSE) {
     # Select the DATE and TIME
     select(DATE_reading, TIME_reading_GMT) %>%
     # Perform query
-    collect() %>% 
+    collect() %>%
     # Create the DATETIME
     mutate(
       Date = ymd_hms(paste(DATE_reading, TIME_reading_GMT), tz = 'GMT')
     )
-  
+
   # Order dates in an ascending or descending order
   if (descending) {
     dates %<>% arrange(desc(Date))
   } else {
     dates %<>% arrange(Date)
   }
-  
+
   # Return a vector of dates
   dates %>% pull('Date')
 }
@@ -531,10 +532,10 @@ createStation <- function(pool, name, full_name, catchment, color, elevation = '
   catchment <- validInputString(catchment)
   color <- validInputString(color)
   elevation <- validInputNumber(elevation, int = TRUE)
-  
+
   # Set the order to the last position
   order <- countRows(pool, 'stations') + 1
-  
+
   # Create SQL query
   query <- sqlInterpolate(
     pool,
@@ -543,7 +544,7 @@ createStation <- function(pool, name, full_name, catchment, color, elevation = '
     order = order, name = name, full_name = full_name, catchment = catchment,
     color = color, elevation = elevation
   )
-  
+
   # Send Query and catch errors
   sendQueryWithError(pool, query)
 }
@@ -558,7 +559,7 @@ updateStation <- function(pool, station, name = '', full_name = '', catchment = 
   catchment <- validInputString(catchment, station$catchment)
   color <- validInputString(color, station$color)
   elevation <- validInputNumber(elevation, station$elevation, int = TRUE)
-  
+
   # Create SQL query
   query <- sqlInterpolate(
     pool,
@@ -568,7 +569,7 @@ updateStation <- function(pool, station, name = '', full_name = '', catchment = 
     id = station$id, name = name, full_name = full_name,
     catchment = catchment, color = color, elevation = elevation
   )
-  
+
   # Send Query and catch errors
   sendQueryWithError(pool, query)
 }
@@ -593,10 +594,10 @@ createGbPlotOption <- function(pool, section_name, option_name, param_name, unit
   plot_func <- validInputString(plot_func)
   description <- validInputString(description)
   active <- validInputBool(active)
-  
+
   # Set the order to the last position
   order <- countRows(pool, 'grab_params_plotting') + 1
-  
+
   # Create SQL query
   query <- sqlInterpolate(
     pool,
@@ -606,7 +607,7 @@ createGbPlotOption <- function(pool, section_name, option_name, param_name, unit
     order = order, section_name = section_name, option_name = option_name, param_name = param_name, units = units,
     data = data, sd = sd, min_max = min_max, plot_func = plot_func, description = description, active = active
   )
-  
+
   # Send Query and catch errors
   sendQueryWithError(pool, query)
 }
@@ -627,7 +628,7 @@ updateGbPlotOption <- function(pool, gbPlotOption, section_name = '', option_nam
   plot_func <- validInputString(plot_func, gbPlotOption$plot_func)
   description <- validInputString(description, gbPlotOption$description)
   active <- validInputBool(active, gbPlotOption$active)
-  
+
   # Create SQL query
   query <- sqlInterpolate(
     pool,
@@ -639,7 +640,7 @@ updateGbPlotOption <- function(pool, gbPlotOption, section_name = '', option_nam
     section_name = section_name, option_name = option_name, param_name = param_name, units = units,
     data = data, sd = sd, min_max = min_max, plot_func = plot_func, description = description, active = active
   )
-  
+
   # Send Query and catch errors
   sendQueryWithError(pool, query)
 }
@@ -660,10 +661,10 @@ createSensorPlotOption <- function(pool, section_name, option_name, param_name, 
   grab_param_name <- validInputString(grab_param_name)
   description <- validInputString(description)
   active <- validInputBool(active)
-  
+
   # Set the order to the last position
   order <- countRows(pool, 'sensor_params_plotting') + 1
-  
+
   # Create SQL query
   query <- sqlInterpolate(
     pool,
@@ -673,7 +674,7 @@ createSensorPlotOption <- function(pool, section_name, option_name, param_name, 
     order = order, section_name = section_name, option_name = option_name, param_name = param_name, units = units,
     data = data, grab_param_name = grab_param_name, description = description, active = active
   )
-  
+
   # Send Query and catch errors
   sendQueryWithError(pool, query)
 }
@@ -692,7 +693,7 @@ updateSensorPlotOption <- function(pool, sensorPlotOption, section_name = '', op
   grab_param_name <- validInputString(grab_param_name, sensorPlotOption$grab_param_name)
   description <- validInputString(description, sensorPlotOption$description)
   active <- validInputBool(active, sensorPlotOption$active)
-  
+
   # Create SQL query
   query <- sqlInterpolate(
     pool,
@@ -704,7 +705,7 @@ updateSensorPlotOption <- function(pool, sensorPlotOption, section_name = '', op
     section_name = section_name, option_name = option_name, param_name = param_name, units = units,
     data = data, grab_param_name = grab_param_name, description = description, active = active
   )
-  
+
   # Send Query and catch errors
   sendQueryWithError(pool, query)
 }
@@ -719,17 +720,17 @@ createGrabParamCat <- function(pool, category, param_name, description = '') {
   category <- validInputString(category)
   param_name <- validInputString(param_name)
   description <- validInputString(description)
-  
+
   # Put at last position
   order <- countRows(pool, 'grab_param_categories') + 1
-  
+
   # Create SQL query
   query <- sqlInterpolate(
     pool,
     'INSERT INTO grab_param_categories (`order`, category, param_name, description) values(?order, ?category, ?param_name, ?description);',
     order = order, category = category, param_name = param_name, description = description
   )
-  
+
   # Send Query and catch errors
   sendQueryWithError(pool, query)
 }
@@ -742,7 +743,7 @@ updateGrabParamCat <- function(pool, grabParamCat, category = '', param_name = '
   category <- validInputString(category, grabParamCat$category)
   param_name <- validInputString(param_name, grabParamCat$param_name)
   description <- validInputString(description, grabParamCat$description)
-  
+
   # Create SQL query
   query <- sqlInterpolate(
     pool,
@@ -752,7 +753,7 @@ updateGrabParamCat <- function(pool, grabParamCat, category = '', param_name = '
     id = grabParamCat$id,
     category = category, param_name = param_name, description = description
   )
-  
+
   # Send Query and catch errors
   sendQueryWithError(pool, query)
 }
@@ -770,7 +771,7 @@ createRequest <- function(pool, name, email, institution, data, reason) {
   institution <- validInputString(institution)
   data <- validInputString(data)
   reason <- validInputString(reason)
-  
+
   # Create SQL query
   query <- sqlInterpolate(
     pool,
@@ -778,7 +779,7 @@ createRequest <- function(pool, name, email, institution, data, reason) {
     values(?name, ?email, ?institution, ?data, ?reason);',
     name = name, email = email, institution = institution, data = data, reason = reason
   )
-  
+
   # Send Query and catch errors
   sendQueryWithError(pool, query)
 }
@@ -790,11 +791,11 @@ updateRequest <- function(pool, request) {
   query <- sqlInterpolate(
     pool,
     'UPDATE `data_requests` SET `read` = ?read WHERE id = ?id;',
-    id = request$id, read = !request$read 
+    id = request$id, read = !request$read
   )
 
   # Send Query and catch errors
-  sendQueryWithError(pool, query)  
+  sendQueryWithError(pool, query)
 }
 
 
@@ -815,7 +816,7 @@ createSensor <- function(pool, station = '', param_name, param_full, model, seri
   calibration_a <- validInputNumber(calibration_a)
   calibration_b <- validInputNumber(calibration_b)
   description <- validInputString(description)
-  
+
   # Create SQL query
   query <- sqlInterpolate(
     pool,
@@ -828,7 +829,7 @@ createSensor <- function(pool, station = '', param_name, param_full, model, seri
     model = model, serial_nb = serial_nb, installation_date = installation_date, in_field = in_field,
     calibration_a = calibration_a, calibration_b = calibration_b, description = description
   )
-  
+
   # Send Query and catch errors
   sendQueryWithError(pool, query)
 }
@@ -848,7 +849,7 @@ updateSensor <- function(pool, sensor, station = '', param_name = '', param_full
   calibration_a <- validInputNumber(calibration_a, sensor$calibration_a)
   calibration_b <- validInputNumber(calibration_b, sensor$calibration_b)
   description <- validInputString(description, sensor$description)
-  
+
   # Create SQL query
   query <- sqlInterpolate(
     pool,
@@ -861,9 +862,9 @@ updateSensor <- function(pool, sensor, station = '', param_name = '', param_full
     model = model, serial_nb = serial_nb, installation_date = installation_date, in_field = in_field,
     calibration_a = calibration_a, calibration_b = calibration_b, description = description
   )
-  
+
   # Send Query and catch errors
-  sendQueryWithError(pool, query)  
+  sendQueryWithError(pool, query)
 }
 
 
@@ -879,10 +880,10 @@ createCalculation <- function(pool, param_category = '', column_calculated = '',
   column_calculated <- validInputString(column_calculated)
   calcul_func <- validInputString(calcul_func)
   columns_used <- validInputString(columns_used)
-  
+
   # Put at last position
   order <- countRows(pool, 'parameter_calculations') + 1
-  
+
   # Create SQL query
   query <- sqlInterpolate(
     pool,
@@ -892,7 +893,7 @@ createCalculation <- function(pool, param_category = '', column_calculated = '',
     order = order, param_category = param_category, column_calculated = column_calculated,
     calcul_func = calcul_func, columns_used = columns_used
   )
-  
+
   # Send Query and catch errors
   sendQueryWithError(pool, query)
 }
@@ -905,7 +906,7 @@ updateCalculation <- function(pool, calculation, param_category = '', column_cal
   column_calculated <- validInputString(column_calculated, calculation$column_calculated)
   calcul_func <- validInputString(calcul_func, calculation$calcul_func)
   columns_used <- validInputString(columns_used, calculation$columns_used)
-  
+
   # Create SQL query
   query <- sqlInterpolate(
     pool,
@@ -916,9 +917,9 @@ updateCalculation <- function(pool, calculation, param_category = '', column_cal
     id = calculation$id, param_category = param_category, column_calculated = column_calculated,
     calcul_func = calcul_func, columns_used = columns_used
   )
-  
+
   # Send Query and catch errors
-  sendQueryWithError(pool, query)  
+  sendQueryWithError(pool, query)
 }
 
 
@@ -935,7 +936,7 @@ createConstant <- function(pool, name = '', unit = '', value = 0, description = 
   unit <- validInputString(unit)
   value <- validInputNumber(value)
   description <- validInputString(description)
-  
+
   # Create SQL query
   query <- sqlInterpolate(
     pool,
@@ -945,7 +946,7 @@ createConstant <- function(pool, name = '', unit = '', value = 0, description = 
     name = name, unit = unit,
     value = value, description = description
   )
-  
+
   # Send Query and catch errors
   sendQueryWithError(pool, query)
 }
@@ -958,7 +959,7 @@ updateConstant <- function(pool, constant, name = '', unit = '', value = 0, desc
   unit <- validInputString(unit, constant$unit)
   value <- validInputNumber(value, constant$value)
   description <- validInputString(description, constant$description)
-  
+
   # Create SQL query
   query <- sqlInterpolate(
     pool,
@@ -969,9 +970,9 @@ updateConstant <- function(pool, constant, name = '', unit = '', value = 0, desc
     id = constant$id, name = name, unit = unit,
     value = value, description = description
   )
-  
+
   # Send Query and catch errors
-  sendQueryWithError(pool, query)  
+  sendQueryWithError(pool, query)
 }
 
 
@@ -985,7 +986,7 @@ createNote <- function(pool, station = '', text = '', verified = FALSE) {
   station <- validInputString(station)
   text <- validInputString(text)
   verified <- validInputBool(verified)
-  
+
   # Create SQL query
   query <- sqlInterpolate(
     pool,
@@ -994,7 +995,7 @@ createNote <- function(pool, station = '', text = '', verified = FALSE) {
     values(?station, ?text, ?verified);',
     station = station, text = text, verified = verified
   )
-  
+
   # Send Query and catch errors
   sendQueryWithError(pool, query)
 }
@@ -1006,7 +1007,7 @@ updateNote <- function(pool, note, station = '', text = '', verified = FALSE) {
   station <- validInputString(station, note$station)
   text <- validInputString(text, note$text)
   verified <- validInputBool(verified, note$verified)
-  
+
   # Create SQL query
   query <- sqlInterpolate(
     pool,
@@ -1015,9 +1016,9 @@ updateNote <- function(pool, note, station = '', text = '', verified = FALSE) {
     WHERE id = ?id;',
     id = note$id, station = station, text = text, verified = verified
   )
-  
+
   # Send Query and catch errors
-  sendQueryWithError(pool, query)  
+  sendQueryWithError(pool, query)
 }
 
 
@@ -1033,7 +1034,7 @@ createStandardCurve <- function(pool, date, parameter, a, b) {
   parameter <- validInputString(parameter)
   a <- validInputNumber(a)
   b <- validInputNumber(b)
-  
+
   # Create SQL query
   query <- sqlInterpolate(
     pool,
@@ -1042,7 +1043,7 @@ createStandardCurve <- function(pool, date, parameter, a, b) {
     values(?date, ?parameter, ?a, ?b);',
     date = date, parameter = parameter, a = a, b = b
   )
-  
+
   # Send Query and catch errors
   sendQueryWithError(pool, query)
 }
@@ -1055,7 +1056,7 @@ updateStandardCurve <- function(pool, standardCurve, date, parameter, a, b) {
   parameter <- validInputString(parameter, standardCurve$parameter)
   a <- validInputNumber(a, standardCurve$a)
   b <- validInputNumber(b, standardCurve$b)
-  
+
   # Create SQL query
   query <- sqlInterpolate(
     pool,
@@ -1064,10 +1065,7 @@ updateStandardCurve <- function(pool, standardCurve, date, parameter, a, b) {
     WHERE id = ?id;',
     id = standardCurve$id, date = date, parameter = parameter, a = a, b = b
   )
-  
+
   # Send Query and catch errors
-  sendQueryWithError(pool, query)  
+  sendQueryWithError(pool, query)
 }
-
-
-
