@@ -7,12 +7,12 @@ mainDownloadUI <- function(id, pool) {
 # Parameters:
 #  - id: String, the module id
 #  - pool: The pool connection to the database
-# 
+#
 # Returns a tagList containing the UI elements
-  
+
   # Create namespace
   ns <- NS(id)
-  
+
   # Create the tagList containing the UI elements
   tagList(
     # Data selection
@@ -41,7 +41,7 @@ mainDownloadUI <- function(id, pool) {
             choices = list('10min (raw)' = '10min', '6H', '12H', '24H'),
             selected = '10min'
           ),
-          class = 'checkbox-grid'        
+          class = 'checkbox-grid'
         ),
         # Select for modeled data
         checkboxInput(
@@ -124,20 +124,20 @@ mainDownload <- function(input, output, session, pool, user, hfDf, selectedSites
 #  - selectedSites: Reactive expression that returns a character vector of sites
 #  - dateRange: Reactive expression that returns a character vector of dates (1: min, 2: max)
 #  - clear: Reactive expression that returns the clear button value
-# 
+#
 # Returns a list of outputs
-  
+
   ## Reactive values to return UI elements ########################################
-  
+
   # Initiate them with an empty expression to render an empty UI
   dlButton <- reactiveVal({})
   disclaimer <- reactiveVal({})
-  
-  
-  
-  
+
+
+
+
   ## Download and request data logic according to authorization ###################
-  
+
   # Look for user update
   observeEvent(user$role, {
     # Get the correct button depending on the user role
@@ -146,7 +146,7 @@ mainDownload <- function(input, output, session, pool, user, hfDf, selectedSites
       ui <- requestDataUI(session$ns('request'))
       dlButton(ui$button)
       disclaimer(ui$disclaimer)
-      
+
       # Create a reactive expression returning a list of the data selection inputs
       dataSelectionInput <- reactive({
         # Define the selected data
@@ -155,7 +155,7 @@ mainDownload <- function(input, output, session, pool, user, hfDf, selectedSites
         } else {
           data <- 'grab samples'
         }
-        
+
         # Create the returned list with all the inputs info
         list(
           'min' = dateRange()[1],
@@ -167,7 +167,7 @@ mainDownload <- function(input, output, session, pool, user, hfDf, selectedSites
           'parameters' = parameters()
         )
       })
-      
+
       # Call the module
       callModule(requestData, 'request', pool, selectedData, dataSelectionInput)
     } else {
@@ -176,16 +176,16 @@ mainDownload <- function(input, output, session, pool, user, hfDf, selectedSites
       callModule(downloadData, 'download', selectedData)
     }
   })
-  
-  
-  
-  
-  
-  
-  
-  
+
+
+
+
+
+
+
+
   ## Data specific inputs display logic ###########################################
-  
+
   # Create an observeEvent that react to data selection changes
   # Show and hide correct specific inputs depending on the selected data
   observeEvent(input$data, {
@@ -193,36 +193,36 @@ mainDownload <- function(input, output, session, pool, user, hfDf, selectedSites
     toggleElement(selector = '#download-hf-inputs', condition = df == 'hfDf')
     toggleElement(selector = '#download-grab-inputs', condition = df == 'grabDf')
   })
-  
-  
-  
+
+
+
   ## Modeled data selection logic #################################################
-  
+
   # Create observeEvent that react to frequence update
   # Display addModeledData checkbox if the selected data frequence is 10min
   observeEvent(input$hfDataFreq, ignoreInit = TRUE, {
     toggleElement('addModeledData', condition = input$hfDataFreq == '10min')
   })
-  
-  
-  
-  
+
+
+
+
   ## Multi selection inputs debouncing ############################################
-  
+
   # Debounce HF parameters selection
   hfParamReactive <- reactive(input$hfParam)
   hfParamReactive_d <- debounce(hfParamReactive, 1000)
-  
+
   # Debounce Grab parameters selection
   grabParamReactive <- reactive(input$grabParam)
   grabParamReactive_d <- debounce(grabParamReactive, 1000)
-  
-  
-  
-  
-  
+
+
+
+
+
   ## Parameters selection logic ###################################################
-  
+
   # Create a reactive expression that retrieve the selected parameters
   parameters <- reactive({
     inputDf <- input$data
@@ -241,33 +241,33 @@ mainDownload <- function(input, output, session, pool, user, hfDf, selectedSites
         param_name %in% local(grabParamReactive_d()),
         columns = c('order', 'data', 'sd', 'min_max')
       ) %>% arrange(order) %>% select(-order)
-      
+
       # Get parameters
       raw_params <- na.exclude(c(parametersInfo$data, parametersInfo$sd, parametersInfo$min_max))
-      
+
       # Create an empty vector
       params <- c()
       # For each parameter unlist them and concatenate to params vector
       for (param in raw_params) {
         params <- c(params, unlist(str_split(param, ',')))
       }
-      
+
       # Return parameters
       params
     }
   })
-  
-  
-  
-  
-  
+
+
+
+
+
   ## Data filtering logic #########################################################
-  
+
   # Create a reactive expression returning the selected data
   selectedData <- reactive({
     # Get df input
     inputDf <- input$data
-    
+
     # If th hf data is selected
     if (inputDf == 'hfDf') {
       df <- hfDf[[input$hfDataFreq]] %>%
@@ -277,14 +277,14 @@ mainDownload <- function(input, output, session, pool, user, hfDf, selectedSites
           date(Date) <= dateRange()[2],
           Site_ID %in% selectedSites()
         )
-      
+
       # If the selected data is the raw HF data
       if (input$hfDataFreq == '10min') {
         # If add modeled data is selected
         if (input$addModeledData) {
           # Create a new df with the date and sites columns
           newDf <- df %>% select(Date, Site_ID)
-          
+
           # For each parameter create a combined column
           for (parameter in parameters()) {
             # Select the parameter columns
@@ -296,10 +296,10 @@ mainDownload <- function(input, output, session, pool, user, hfDf, selectedSites
             # Add parameter columns to the new df
             newDf <- bind_cols(newDf, tmpDf)
           }
-          
+
           # Assigne the new df to the df
           df <- newDf
-          
+
           # Remove the tmpDf and newDf
           rm(tmpDf, newDf, tmpSPCol)
         } else {
@@ -312,7 +312,7 @@ mainDownload <- function(input, output, session, pool, user, hfDf, selectedSites
         # Select date, stations and all parameters
         df %<>% select(Date, Site_ID, all_of(parameters()))
       }
-      
+
       # If the grab data is selected
     } else if (inputDf == 'grabDf') {
       # Get the data
@@ -329,7 +329,7 @@ mainDownload <- function(input, output, session, pool, user, hfDf, selectedSites
         # Parse the DATE and time
       ) %>% mutate(
         station = as.factor(station),
-        Date = ymd_hms(paste(DATE_reading, TIME_reading_GMT), tz = 'GMT')
+        Date = ymd_hms(as.character(DATE_reading), as.character(TIME_reading_GMT), tz = 'GMT')
         # Rename for the download
       ) %>% rename(
         Site_ID = station
@@ -344,19 +344,19 @@ mainDownload <- function(input, output, session, pool, user, hfDf, selectedSites
       # If no data is selected set df as an empty data.table
       df <- data.table()
     }
-    
+
     # Convert df to data.table for print output
     as.data.table(df)
   })
-  
-  
-  
-  
-  
-  
-  
+
+
+
+
+
+
+
   ## Parameter description modal logic ############################################
-  
+
   # Create an observeEvent that react to the HF parameter helper icon button
   observeEvent(input$hfParamHelper | input$grabParamHelper, ignoreInit = TRUE, {
     # Select the correct parameters df
@@ -367,11 +367,11 @@ mainDownload <- function(input, output, session, pool, user, hfDf, selectedSites
       parameters <- getRows(pool, 'grab_params_plotting', active == TRUE, columns = c('order', 'option_name', 'description')) %>%
         arrange(order) %>% select(-order)
     }
-    
+
     # Render the descriptions UI in the modal
     output$description <- renderUI({
       descriptions <- tagList()
-      
+
       # For each selected parameter
       for (i in c(1:nrow(parameters))) {
         descriptions <- tagList(
@@ -387,12 +387,12 @@ mainDownload <- function(input, output, session, pool, user, hfDf, selectedSites
           )
         )
       }
-      
+
       # Return the descriptions
       return(descriptions)
     })
-    
-    
+
+
     # Create modal with the corresponding htmlOutput
     showModal(modalDialog(
       title = 'Parameter description',
@@ -401,12 +401,12 @@ mainDownload <- function(input, output, session, pool, user, hfDf, selectedSites
       easyClose = TRUE
     ))
   })
-  
-  
-  
-  
+
+
+
+
   ## Data helpers logic ####################################################
-  
+
   # Create an observeEvent that react to the data freq helper button
   observeEvent(input$hfFreqHelper, ignoreInit = TRUE, {
     showModal(modalDialog(
@@ -416,7 +416,7 @@ mainDownload <- function(input, output, session, pool, user, hfDf, selectedSites
       easyClose = TRUE
     ))
   })
-  
+
   # Create an observeEvent that react to modeled data helper button
   observeEvent(input$modeledHelper, ignoreInit = TRUE, {
     showModal(modalDialog(
@@ -426,44 +426,44 @@ mainDownload <- function(input, output, session, pool, user, hfDf, selectedSites
       easyClose = TRUE
     ))
   })
-  
-  
-  
-  
-  
-  
+
+
+
+
+
+
   ## Clear form logic #############################################################
-  
+
   # Create a reactive expression that clear inputs
   clearInputs <- reactive({
     # Call clear inputs to rerun the reactive expression
     clear()
-    
+
     # Clear data selection
     updateSelectInput(session, 'data', selected = '')
-    
+
     # HF specific clearing
-    
+
     # Reset data frequency and modeled data selection
     updateRadioButtons(session, 'hfDataFreq', selected = '10min')
     updateCheckboxInput(session, 'addModeledData', value = FALSE)
-    
+
     # Clear parameters selection
     updateSelectizeInput(session, 'hfParam', selected = '')
-    
+
     # Grab specific clearing
-    
+
     # Clear parameters selection
     updateSelectizeInput(session, 'grabParam', selected = '')
   })
-  
-  
-  
-  
-  
-  
+
+
+
+
+
+
   ## Output returning logic #######################################################
-  
+
   # Returns a list of output to the download layout module
   return(
     list(

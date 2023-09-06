@@ -7,21 +7,21 @@ globalGrabSamplesComparisonUI <- function(id, pool) {
 # Parameters:
 #  - id: String, the module id
 #  - pool: The pool connection to the database
-# 
+#
 # Returns a list containing:
 #  - inputs: the inputs UI elements of the module
 #  - plots: the plots UI elements of the module
-  
+
   # Create namespace
   ns <- NS(id)
-  
+
   # Get parameter select options
   parameterOptions <- parseOptionsWithSections(
     getRows(pool, 'grab_param_categories', columns = c('order', 'category', 'param_name')) %>%
       arrange(order) %>% select(-order),
     valueColumn = 'param_name', sectionColumn = 'category', optionColumn = 'param_name'
   )
-  
+
   # Create the UI list to be returned
   list(
     # Create the UI inputs
@@ -40,7 +40,7 @@ globalGrabSamplesComparisonUI <- function(id, pool) {
             'name'
           )
         ),
-        class = 'checkbox-grid'        
+        class = 'checkbox-grid'
       ),
       # Inputs for X axis
       # Create a select input for parameter selection
@@ -95,11 +95,11 @@ globalGrabSamplesComparison <- function(input, output, session, dateRange, pool)
 #               + min: Date, the lower bound to filter the date
 #               + max: Date, the upper bound to filter the data
 #  - pool: The pool connection to the database
-# 
+#
 # Returns NULL
-  
+
   # ## Selected station logic #######################################################
-  # 
+  #
   # # Create a reactive expression that return the current site info
   # currentSite <- reactive(getRows(
   #   pool,
@@ -107,43 +107,43 @@ globalGrabSamplesComparison <- function(input, output, session, dateRange, pool)
   #   name == local(input$site),
   #   columns = c('full_name', 'color')
   # ))
-  
-  
-  
-  
+
+
+
+
   ## Parameter logic ###################################################
-  
+
   # Create a reactive expression that return the parameter X and Y infos
   currentParamX <- reactive(getRows(
     pool, 'grab_param_categories',
     param_name == local(input$paramX),
     columns = c('order', 'param_name', 'description')
   ) %>% arrange(order) %>% select(-order))
-  
+
   currentParamY <- reactive(getRows(
     pool, 'grab_param_categories',
     param_name == local(input$paramY),
     columns = c('order', 'param_name', 'description')
   ) %>% arrange(order) %>% select(-order))
-  
-  
-  
-  
-  
-  
+
+
+
+
+
+
   ## Data manipulation logic ######################################################
-  
+
   # Create a data reactive expression that return a subset of the data
   # Using the dateRange, sites and currentParam reactive expressions
   data <- reactive({
     # Save the sub parameters to display
     paramColsX <- currentParamX()$param_name
     paramColsY <- currentParamY()$param_name
-    
+
     # If there is no sub parameter return NULL
     if (is.null(paramColsX) | is.null(paramColsY)) return(NULL)
-    
-    
+
+
     # Filter the data using the selected sites and the date range
     # And select the columns
     df <- getRows(
@@ -158,28 +158,28 @@ globalGrabSamplesComparison <- function(input, output, session, dateRange, pool)
       # Parse the DATE and time
     ) %>% mutate(
       station = as.factor(station),
-      DATETIME_GMT = ymd_hms(paste(DATE_reading, TIME_reading_GMT), tz = 'GMT'),
+      DATETIME_GMT = ymd_hms(as.character(DATE_reading), as.character(TIME_reading_GMT), tz = 'GMT'),
       DATE_reading = ymd(DATE_reading),
       DATETIME_month_day_time_GMT = `year<-`(DATETIME_GMT, 2020)
       # Rename for the plotting function
     ) %>% rename(
       Site_ID = station
     )
-    
-    
+
+
     # If there is no data return NULL else the df
     if (dim(df)[1] == 0) NULL else df
   })
-  
-  
-  
+
+
+
   ## Plots output logic ###########################################################
-  
+
   # Render the regular timeserie plot
   output$grabVsGrab <- renderPlot({
     # If there are no data return NULL
     if (data() %>% is.null()) return(NULL)
-    
+
     # Create and return a onVsOne plot
     onVsOnePlot(
       df = data(),
@@ -198,20 +198,20 @@ globalGrabSamplesComparison <- function(input, output, session, dateRange, pool)
       Site_ID %in% input$sites
     )
   })
-  
-  
-  
-  
+
+
+
+
   ## Plot hovering logic ##########################################################
-  
+
   # Activate the hover widget for the regular timeserie plot
   pointHoverWidgetServer(session, 'grabVsGrab', data, reactive(input$grabVsGrab_hover))
-  
-  
-  
-  
+
+
+
+
   ## Parameter description modal logic ############################################
-  
+
   # X parameter
   # Create an observeEvent that react to the parameter helper icon button
   observeEvent(input$paramHelperX, {
@@ -220,7 +220,7 @@ globalGrabSamplesComparison <- function(input, output, session, dateRange, pool)
       class = 'description',
       currentParamX() %>% pull(description)
     ))
-    
+
     # Create modal with the corresponding htmlOutput
     showModal(modalDialog(
       title = 'Parameter description',
@@ -229,8 +229,8 @@ globalGrabSamplesComparison <- function(input, output, session, dateRange, pool)
       easyClose = TRUE
     ))
   })
-  
-  
+
+
   # Y parameter
   # Create an observeEvent that react to the parameter helper icon button
   observeEvent(input$paramHelperY, {
@@ -239,7 +239,7 @@ globalGrabSamplesComparison <- function(input, output, session, dateRange, pool)
       class = 'description',
       currentParamY() %>% pull(description)
     ))
-    
+
     # Create modal with the corresponding htmlOutput
     showModal(modalDialog(
       title = 'Parameter description',
@@ -249,4 +249,3 @@ globalGrabSamplesComparison <- function(input, output, session, dateRange, pool)
     ))
   })
 }
-

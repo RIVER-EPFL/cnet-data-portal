@@ -7,12 +7,12 @@ sensorVSGrabDownloadUI <- function(id, pool) {
 # Parameters:
 #  - id: String, the module id
 #  - pool: The pool connection to the database
-# 
+#
 # Returns a tagList containing the UI elements
-  
+
   # Create namespace
   ns <- NS(id)
-  
+
   # Create the tagList containing the UI elements
   tagList(
     # Public or global grab param selection
@@ -95,27 +95,27 @@ sensorVSGrabDownload <- function(input, output, session, pool, user, hfDf, selec
 #  - selectedSites: Reactive expression that returns a character vector of sites
 #  - dateRange: Reactive expression that returns a character vector of dates (1: min, 2: max)
 #  - clear: Reactive expression that returns the clear button value
-# 
+#
 # Returns a list of outputs
 
   ## Multi selection inputs debouncing ############################################
-  
+
   # Debounce HF parameters selection
   hfParamReactive <- reactive(input$hfParam)
   hfParamReactive_d <- debounce(hfParamReactive, 1000)
-  
+
   # Debounce Grab parameters selection
   grabParamReactive <- reactive(input$grabParam)
   grabParamReactive_d <- debounce(grabParamReactive, 1000)
   globalGrabParamReactive <- reactive(input$globalGrabParam)
   globalGrabParamReactive_d <- debounce(globalGrabParamReactive, 1000)
-  
-  
-  
-  
-  
+
+
+
+
+
   ## Parameters selection logic ###################################################
-  
+
   # Create an observeEvent that react to the grabSelection radio buttons
   observeEvent(input$grabSelection, ignoreInit = TRUE, {
     # Toggle grab parameters selection visibility depending on the grab selection
@@ -123,10 +123,10 @@ sensorVSGrabDownload <- function(input, output, session, pool, user, hfDf, selec
     toggleElement('globalGrabParam', condition = selection == 'global')
     toggleElement('grabParam', condition = selection == 'public')
   })
-  
-  
-  
-  
+
+
+
+
   # Create a reactive expression that return the selected grab parameters
   grabParams <- reactive({
     # Use correct logic
@@ -140,22 +140,22 @@ sensorVSGrabDownload <- function(input, output, session, pool, user, hfDf, selec
         param_name %in% local(grabParamReactive_d()),
         columns = c('order', 'data', 'sd', 'min_max')
       ) %>% arrange(order) %>% select(-order)
-      
+
       # Get parameters
       raw_params <- na.exclude(c(parametersInfo$data, parametersInfo$sd, parametersInfo$min_max))
-      
+
       # Create an empty vector
       params <- c()
       # For each parameter unlist them and concatenate to params vector
       for (param in raw_params) {
         params <- c(params, unlist(str_split(param, ',')))
       }
-      
+
       # Return parameters
       params
     }
   })
-  
+
   # Create a reactive expression that return the selected sensor parameters
   hfParams <- reactive({
     getRows(
@@ -164,18 +164,18 @@ sensorVSGrabDownload <- function(input, output, session, pool, user, hfDf, selec
       columns = c('order', 'data')
     ) %>% arrange(order) %>% pull(data)
   })
-  
-  
-  
-  
-  
+
+
+
+
+
   ## Data filtering logic #########################################################
-  
+
   # Create a reactive expression returning the selected data
   selectedData <- reactive({
     # Return an empty data.table when the dateRange is NULL
     if (is.null(dateRange())) return(data.table())
-    
+
     # Get reactive expressions
     sites <- selectedSites()
     minDate <- dateRange()[1]
@@ -183,7 +183,7 @@ sensorVSGrabDownload <- function(input, output, session, pool, user, hfDf, selec
     grabParams <- grabParams()
     addModeledData <- input$addModeledData
     hfParams <- hfParams()
-    
+
     # Get the grab data
     grabDf <- getRows(
       pool = pool,
@@ -198,7 +198,7 @@ sensorVSGrabDownload <- function(input, output, session, pool, user, hfDf, selec
       # Parse the DATE and time
     ) %>% mutate(
       station = as.factor(station),
-      Date = ymd_hms(paste(DATE_reading, TIME_reading_GMT), tz = 'GMT')
+      Date = ymd_hms(as.character(DATE_reading), as.character(TIME_reading_GMT), tz = 'GMT')
       # Rename for the download
     ) %>% rename(
       Site_ID = station
@@ -210,15 +210,15 @@ sensorVSGrabDownload <- function(input, output, session, pool, user, hfDf, selec
       Date, Site_ID
       # Convert to a data-table for further processing and print output
     ) %>% as.data.table()
-    
+
     # If the grab data is empty return it
     if (nrow(grabDf) == 0) return(grabDf)
-    
+
     # Define data types to remove depending on the state of addModeledData
     # If nothing to remove, set to 'NULL' as string to avoid match error
     typesToRemove <- c('modeled')
     if (addModeledData) typesToRemove <- 'NULL'
-    
+
     # Filter the sensor data using the selected sites and the date range
     hfData <- hfDf$`10min` %>%
       # Filter rows
@@ -230,7 +230,7 @@ sensorVSGrabDownload <- function(input, output, session, pool, user, hfDf, selec
       # Select the date, Site_ID, all the parameter specific columns
       # And remove the singlePoint column and the modeled one if needed
       select(Date, Site_ID, starts_with(hfParams), -ends_with(c(typesToRemove, 'singlePoint')))
-    
+
     # Iterate over sensor parameters
     for (parameter in hfParams) {
       # Create the new parameter and parameter_sd columns
@@ -240,10 +240,10 @@ sensorVSGrabDownload <- function(input, output, session, pool, user, hfDf, selec
         !!parameter_avg := as.numeric(rep(NA, nrow(grabDf))),
         !!parameter_sd := as.numeric(rep(NA, nrow(grabDf)))
       )
-      
+
       # Get the sensor parameter column
       parameterData <- hfData %>% select(Site_ID, Date, starts_with(parameter))
-      
+
       # For each grab data point calculate the corresponding HF data
       for (i in 1:nrow(grabDf)) {
         # Define the HF data starting time, e.i. 2 hours after the grab sample
@@ -252,13 +252,13 @@ sensorVSGrabDownload <- function(input, output, session, pool, user, hfDf, selec
         endingTime <- startingTime + hours(4)
         # Get site
         site <- as.character(grabDf$Site_ID[i])
-        
+
         # Filter the HF data using the interval and site
         filteredHf <- parameterData %>% filter(Site_ID == site, Date >= startingTime, Date <= endingTime)
-        
+
         # If no data proceed to next iteration
         if (nrow(filteredHf) == 0) next
-        
+
         # If addModeledData is true combine the measured and modeled HF data in one vector
         # Else get the values (the modeled data are already filtered)
         if (input$addModeledData) {
@@ -267,74 +267,74 @@ sensorVSGrabDownload <- function(input, output, session, pool, user, hfDf, selec
         } else {
           valuesHf <- filteredHf %>% select(starts_with(parameter)) %>% pull()
         }
-        
+
         # Calculate the average and sd
         averageHf <- mean(valuesHf, na.rm = TRUE)
         sdHf <- sd(valuesHf, na.rm = TRUE)
-        
+
         # Set the values in the df (data.table)
         grabDf[i, (parameter_avg) := averageHf]
         grabDf[i, (parameter_sd) :=  sdHf]
       }
     }
-    
+
     # Clear Hf data from memory
     rm(hfData, filteredHf, parameterData, valuesHf, averageHf, sdHf)
-    
+
     # Return the updated df
     grabDf
   })
-  
-  
-  
-  
-  
-  
-  
-  
+
+
+
+
+
+
+
+
   ## Clear form logic #############################################################
-  
+
   # Create a reactive expression that clear inputs
   clearInputs <- reactive({
     # Call clear inputs to rerun the reactive expression
     clear()
-    
+
     # HF specific clearing
-    
+
     # Reset modeled data selection
     updateCheckboxInput(session, 'addModeledData', value = FALSE)
-    
+
     # Clear parameters selection
     updateSelectizeInput(session, 'hfParam', selected = '')
-    
+
     # Grab specific clearing
-    
+
     # Clear parameters selection
     updateSelectizeInput(session, 'grabParam', selected = '')
     updateSelectizeInput(session, 'globalGrabParam', selected = '')
   })
-  
-  
-  
-  
-  
-  
-  
+
+
+
+
+
+
+
   ## Call Download data module #########################################################
-  
+
   # Look for user update
-  
+
   dlButton <- reactiveVal(downloadDataUI(session$ns('download')))
   callModule(downloadData, 'download', selectedData)
-  
-  
-  
-  
-  
-  
-  
+
+
+
+
+
+
+
   ## Output returning logic #######################################################
-  
+
   # Returns a list of output to the download layout module
   return(
     list(

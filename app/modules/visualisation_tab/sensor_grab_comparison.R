@@ -7,14 +7,14 @@ sensorGrabComparisonUI <- function(id, pool) {
 # Parameters:
 #  - id: String, the module id
 #  - pool: The pool connection to the database
-# 
+#
 # Returns a list containing:
 #  - inputs: the inputs UI elements of the module
 #  - plots: the plots UI elements of the module
-  
+
   # Create namespace
   ns <- NS(id)
-  
+
   # Create the UI list to be returned
   list(
     # Create the UI inputs
@@ -66,11 +66,11 @@ sensorGrabComparisonUI <- function(id, pool) {
           choices = list('10min (raw)' = '10min', '24H'),
           selected = '24H'
         ),
-        class = 'checkbox-grid'        
+        class = 'checkbox-grid'
       ),
       # Create radio buttons group to select grab parameter
       radioButtons(
-        ns('paramGrab'), 
+        ns('paramGrab'),
         'Grab sample parameter',
         choices = 'NULL'
       )
@@ -119,11 +119,11 @@ sensorGrabComparison <- function(input, output, session, df, dateRange, pool) {
 #               + min: Date, the lower bound to filter the date
 #               + max: Date, the upper bound to filter the data
 #  - pool: The pool connection to the database
-# 
+#
 # Returns a reactive expression containing the updated date range with the same format as the input
-  
+
   ## Selected station logic #######################################################
-  
+
   # Create a reactive expression that return the current site info
   currentSite <- reactive(getRows(
     pool,
@@ -131,11 +131,11 @@ sensorGrabComparison <- function(input, output, session, df, dateRange, pool) {
     name == local(input$site),
     columns = c('order', 'name', 'full_name', 'color')
   ) %>% arrange(order) %>% select(-order))
-  
-  
+
+
 
   ## Parameters update logic ###################################################
-  
+
   # Create a reactive expression that returns the selected high frequency parameter info
   paramHf <- reactive({
     # Run it only if input$paramHf is available
@@ -146,18 +146,18 @@ sensorGrabComparison <- function(input, output, session, df, dateRange, pool) {
       columns = c('order', 'param_name', 'units', 'data', 'grab_param_name', 'description')
     ) %>% arrange(order) %>% select(-order)
   })
-  
+
   # Create an observeEvent that react to the paramHf reactive expression
   observeEvent(paramHf(),{
     # Get grab parameters
     grabParams <- paramHf() %>% select(grab_param_name) %>% str_split(',') %>% unlist()
-    
+
     # Update grab sample parameter radio buttons group input with current parameter info
     updateRadioButtons(session, 'paramGrab',
                        choices = grabParams,
                        selected = grabParams[1])
   })
-  
+
   # Create a reactive expression that returns the selected grab sample parameter info
   paramGrab <- reactive(
     data.frame(
@@ -166,15 +166,15 @@ sensorGrabComparison <- function(input, output, session, df, dateRange, pool) {
       units = isolate(paramHf()$units)
     )
   )
-  
-  
-  
-  
+
+
+
+
   ## Data manipulation logic ######################################################
-  
+
   # Create a data reactive expressions that return a subsets of the HF and grab data
   # Using the dateRange, sites and parameters reactive expressions
-  
+
   # Create the high frequency data subset
   hfDf <- reactive({
     # Get high frequency data
@@ -186,7 +186,7 @@ sensorGrabComparison <- function(input, output, session, df, dateRange, pool) {
       # If nothing to remove, set to 'NULL' as string to avoid match error
       typesToRemove <- c('modeled')
       if (input$showModeledData) typesToRemove <- 'NULL'
-      
+
       # Filter the data using the selected sites and the date range
       hfDf %<>% filter(
         Site_ID == input$site,
@@ -194,7 +194,7 @@ sensorGrabComparison <- function(input, output, session, df, dateRange, pool) {
         date(Date) <= dateRange()$max
       ) %>%
         # Select the date, Site_ID, all the parameter specific columns and remove modeled column not used
-        select(Date, Site_ID, starts_with(paramHf()$data), -ends_with(typesToRemove)) %>% 
+        select(Date, Site_ID, starts_with(paramHf()$data), -ends_with(typesToRemove)) %>%
         # Pivot longer the data to get a data_type and a value column
         pivot_longer(
           ends_with(c('measured', 'modeled')),
@@ -202,7 +202,7 @@ sensorGrabComparison <- function(input, output, session, df, dateRange, pool) {
           names_pattern = '.*_(.*)',
           names_transform = list('data_type' = as.factor),
           values_to = 'value'
-        ) %>% 
+        ) %>%
         # Rename with singlePoint column
         rename(singlePoint = ends_with('singlePoint'))
     } else {
@@ -214,20 +214,20 @@ sensorGrabComparison <- function(input, output, session, df, dateRange, pool) {
         date(Date) <= dateRange()$max
       ) %>% select(Date, Site_ID, 'value' = paramHf()$data)
     }
-    
+
     # If there is no data return NULL
     if (nrow(hfDf) == 0) NULL else hfDf
   })
-  
+
   # Create the grab data subset
   grabDf <- reactive({
     # If no grab parameter is selected return NULL
     if (nrow(paramGrab()) == 0) return(NULL)
-    
+
     # Get grab parameter
     # If multiple sub params keep only the first one
     paramGrab <- unlist(str_split(paramGrab()$data, ','))[1]
-    
+
     # Filter the data using the selected sites and the date range
     # And select the columns
     grabDf <- getRows(
@@ -243,7 +243,7 @@ sensorGrabComparison <- function(input, output, session, df, dateRange, pool) {
       # Parse the DATE and time
     ) %>% mutate(
       station = as.factor(station),
-      DATETIME_GMT = ymd_hms(paste(DATE_reading, TIME_reading_GMT), tz = 'GMT'),
+      DATETIME_GMT = ymd_hms(as.character(DATE_reading), as.character(TIME_reading_GMT), tz = 'GMT'),
       DATE_reading = ymd(DATE_reading),
       DATETIME_month_day_time_GMT = `year<-`(DATETIME_GMT, 2020)
       # Rename for the plotting function
@@ -251,25 +251,25 @@ sensorGrabComparison <- function(input, output, session, df, dateRange, pool) {
       Site_ID = station,
       value = all_of(paramGrab)
     )
-    
+
     # If there is no data return NULL
     if (nrow(grabDf) == 0) NULL else grabDf
   })
-  
+
   # Create the grab vs HF data subset
   vsDf <- reactive({
     # If grabDf is NULL or hfData is empty return NULL
     if (is.null(grabDf())) return(NULL)
-    
+
     # Get hf data
     # Refilter HF data here to always get the 10min data and not rerender when changing the frequency
     hfData <- df$`10min`
-    
+
     # Define data types to remove depending on the state of showModeledData
     # If nothing to remove, set to 'NULL' as string to avoid match error
     typesToRemove <- c('modeled')
     if (input$showModeledData) typesToRemove <- 'NULL'
-    
+
     # Filter the data using the selected sites and the date range
     hfData %<>% filter(
       Site_ID == input$site,
@@ -279,7 +279,7 @@ sensorGrabComparison <- function(input, output, session, df, dateRange, pool) {
       # Select the date, Site_ID, all the parameter specific columns
       # And remove the singlePoint column and the modeled one if needed
       # Isolate paramHF to avoid multiple rerender
-      select(Date, Site_ID, starts_with(isolate(paramHf()$data)), -ends_with(c(typesToRemove, 'singlePoint'))) %>% 
+      select(Date, Site_ID, starts_with(isolate(paramHf()$data)), -ends_with(c(typesToRemove, 'singlePoint'))) %>%
       # Pivot longer the data to get a data_type and a value column
       pivot_longer(
         ends_with(c('measured', 'modeled')),
@@ -288,32 +288,32 @@ sensorGrabComparison <- function(input, output, session, df, dateRange, pool) {
         names_transform = list('data_type' = as.factor),
         values_to = 'value'
       )
-    
+
     # If hfData is empty return NULL
     if (nrow(hfData) == 0) return(NULL)
-    
+
     # Get the non NA grab data, if empty return NULL
     vsDf <- grabDf() %>% filter(!is.na(value))
     if (nrow(vsDf) == 0) return(NULL)
-    
+
     # Rename the value column  and add new empty columns
     vsDf <- rename(vsDf, 'grab_value' = value)
     vsDf %<>%  mutate(hf_value = as.numeric(rep(NA, nrow(vsDf))))
     # vsDf['hf_sd'] <- rep(NA, nrow(vsDf))
-    
+
     # For each grab data point calculate the corresponding HF data
     for (i in 1:nrow(vsDf)) {
       # Define the HF data starting time, e.i. 2 hours after the grab sample
       startingTime <- vsDf$DATETIME_GMT[i] + hours(2)
       # Define the HF data ending time, e.i. 4 hours after the starting time
       endingTime <- startingTime + hours(4)
-      
+
       # Filter the HF data using the interval
       filteredHf <- hfData %>% filter(Date >= startingTime, Date <= endingTime)
-      
+
       # If no data proceed to next iteration
       if (nrow(filteredHf) == 0) next
-      
+
       # If showModeledData is true combine the measured and modeled HF data in one vector
       # Else get the value (the modeled data are already filtered in hfData)
       if (input$showModeledData) {
@@ -322,17 +322,17 @@ sensorGrabComparison <- function(input, output, session, df, dateRange, pool) {
       } else {
         valuesHf <- filteredHf %>% pull(value)
       }
-      
+
       # Calculate the average and sd
       averageHf <- mean(valuesHf, na.rm = TRUE)
       # sdHf <- sd(valuesHf, na.rm = TRUE)
-      
+
       # Set the values in the df (data.table)
       vsDf <- as.data.table(vsDf)
       vsDf[i, hf_value := averageHf]
       # vsDf[i, 'hf_sd'] <- sdHf
     }
-    
+
     # Clear Hf data from memory
     rm(hfData, filteredHf, valuesHf, averageHf)
 
@@ -340,24 +340,24 @@ sensorGrabComparison <- function(input, output, session, df, dateRange, pool) {
     if (all(is.na(vsDf$hf_value))) NULL else vsDf
   })
 
-  
-  
-  
+
+
+
   ## Plots output logic ###########################################################
 
   # Render the regular timeserie plot
   output$sensorGrabTimeserie <- renderPlot({
     # If no grab parameter is selected return NULL
     if (nrow(paramGrab()) == 0) return(NULL)
-    
+
     # Isolate HF data to avoid multiple rerender
     hfData <- isolate(hfDf())
     # Call inputs to rerender the plot
     if (input$dataFreq == '10min') input$showModeledData
-    
+
     # If there are no data return NULL
     if (hfData %>% is.null()) return(NULL)
-    
+
     # Create a highFreqTimeSeriePlot
     p <- highFreqTimeSeriePlot(
       df = hfData,
@@ -367,7 +367,7 @@ sensorGrabComparison <- function(input, output, session, df, dateRange, pool) {
       sites = currentSite(),
       modeledData = 'data_type' %in% colnames(hfData)
     )
-    
+
     # If there are some grab sample data available
     # Add them to the graph
     if (!is.null(grabDf())) {
@@ -378,23 +378,23 @@ sensorGrabComparison <- function(input, output, session, df, dateRange, pool) {
         maxHf = max(hfData$value, na.rm = TRUE)
       )
     }
-    
+
     # Return the graph
     p
   })
 
-  
-  
+
+
   # Render on vs one plot
   output$sensorVsGrab <- renderPlot({
     # If there are no data return NULL
     if (vsDf() %>% is.null()) return(NULL)
-    
+
     # Get current site name and color
     site <- currentSite()
     currentSiteName <- site %>% pull(full_name)
     currentSiteColor <- site %>% pull(color)
-    
+
     # Create a onVsOne plot add the one to one line and return the plot
     onVsOnePlot(
       df = vsDf(),
@@ -410,10 +410,10 @@ sensorGrabComparison <- function(input, output, session, df, dateRange, pool) {
       maxData = max(vsDf()$grab_value, vsDf()$hf_value, na.rm = TRUE)
     )
   })
-  
-  
-  
-  
+
+
+
+
   ## Plot hovering logic ##########################################################
 
   # Activate the hover widget for the regular timeserie plot
@@ -424,11 +424,11 @@ sensorGrabComparison <- function(input, output, session, df, dateRange, pool) {
   pointHoverWidgetServer(session, 'sensorVsGrab', vsDf, reactive(input$sensorVsGrab_hover),
                          x_label = 'Grab Sample', y_label = 'Sensor')
 
-  
-  
-  
+
+
+
   ## Parameter description modal logic ############################################
-  
+
   # Create an observeEvent that react to the parameter helper icon button
   observeEvent(input$paramHelper, {
     # Render the description UI in the modal
@@ -436,7 +436,7 @@ sensorGrabComparison <- function(input, output, session, df, dateRange, pool) {
       class = 'description',
       paramHf()$description
     ))
-    
+
     # Create modal with the corresponding htmlOutput
     showModal(modalDialog(
       title = 'Parameter description',
@@ -445,12 +445,12 @@ sensorGrabComparison <- function(input, output, session, df, dateRange, pool) {
       easyClose = TRUE
     ))
   })
-  
-  
-  
-  
+
+
+
+
   ## Data Frequency helper logic ####################################################
-  
+
   # Create an observeEvent that react to the data freq helper button
   observeEvent(input$hfFreqHelper, ignoreInit = TRUE, {
     showModal(modalDialog(
@@ -460,10 +460,10 @@ sensorGrabComparison <- function(input, output, session, df, dateRange, pool) {
       easyClose = TRUE
     ))
   })
-  
-  
-  
-  
+
+
+
+
   ## Update dateRange with plot brushing and double click logic ####################################
 
   # Create a reactive expression that contains the new dateRange to be used globally
@@ -495,4 +495,3 @@ sensorGrabComparison <- function(input, output, session, df, dateRange, pool) {
     'reset' = resetDateRange
   ))
 }
-

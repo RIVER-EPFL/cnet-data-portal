@@ -7,14 +7,14 @@ grabSamplesTimeSeriesUI <- function(id, pool) {
 # Parameters:
 #  - id: String, the module id
 #  - pool: The pool connection to the database
-# 
+#
 # Returns a list containing:
 #  - inputs: the inputs UI elements of the module
 #  - plots: the plots UI elements of the module
-  
+
   # Create namespace
   ns <- NS(id)
-  
+
   # Create the UI list to be returned
   list(
     # Create the UI inputs
@@ -99,11 +99,11 @@ grabSamplesTimeSeries <- function(input, output, session, dateRange, pool) {
 #               + min: Date, the lower bound to filter the date
 #               + max: Date, the upper bound to filter the data
 #  - pool: The pool connection to the database
-# 
+#
 # Returns a reactive expression containing the updated date range with the same format as the input
-  
+
   ## Stations update logic ########################################################
-  
+
   # Create an observeEvent that react to the catchment select input
   observeEvent(input$catchment, {
     # Get catchment sites info
@@ -113,17 +113,17 @@ grabSamplesTimeSeries <- function(input, output, session, dateRange, pool) {
       catchment == local(input$catchment),
       columns = c('order', 'name', 'full_name')
     ) %>% arrange(order) %>% select(-order)
-    
+
     # Update sites checkbox group input with current sites info
     updateCheckboxGroupInput(session, 'sites',
                              selected = catchmentSites$name,
                              choiceNames = catchmentSites$full_name,
                              choiceValues = catchmentSites$name)
   })
-  
+
   # Create a reactive expression returning the selected sites
   selectedSites <- reactive({input$sites})
-  
+
   # Create a debounced reactive expression returning the selected sites
   selectedSites_d <-  selectedSites %>% debounce(1000)
 
@@ -134,16 +134,16 @@ grabSamplesTimeSeries <- function(input, output, session, dateRange, pool) {
     name %in% local(selectedSites_d()),
     columns = c('order', 'name', 'full_name', 'catchment', 'color')
   ) %>% arrange(order) %>% select(-order))
-  
+
   # Create a currentCatchment reactive expression
   currentCatchment <- reactive(currentSites() %>% pull(catchment) %>% unique())
-  
-  
-  
-  
-  
+
+
+
+
+
   ## Parameter logic ###################################################
-  
+
   # Create a reactive expression that return the parameter infos
   currentParam <- reactive(getRows(
     pool, 'grab_params_plotting',
@@ -151,29 +151,29 @@ grabSamplesTimeSeries <- function(input, output, session, dateRange, pool) {
     param_name == local(input$param),
     columns = c('order', 'param_name', 'units', 'data', 'sd', 'min_max', 'plot_func', 'description')
   ) %>% arrange(order) %>% select(-order))
-  
-  
-  
-  
-  
+
+
+
+
+
   ## Sub parameter update logic ###################################################
-  
+
   # Create an observeEvent that react to the param select input
   observeEvent(input$param,{
     # Get parameter info
     dataColumns <- currentParam() %>% select(data) %>% str_split(',') %>% unlist()
-    
+
     # Update sub parameter checkbox group input with current parameter info
     updateCheckboxGroupInput(session, 'paramfilter',
                              choices = dataColumns,
                              selected = dataColumns[1])
-    
+
     # Toggle sub parameter checkbox group input visibility
     # In function of the number of sub parameters
     # length(dataColumns) > 1 == TRUE -> show else hide
     toggleElement('paramfilter', condition = length(dataColumns) > 1)
   })
-  
+
   # Create a reactive expression returning the parameter info as a named list:
   #  - filter: the sub parameters to display
   #  - param: the parameter info
@@ -181,38 +181,38 @@ grabSamplesTimeSeries <- function(input, output, session, dateRange, pool) {
     # Save the parameter and sub parameters into variables
     inputParam <- input$param
     paramToDisplay <- input$paramfilter
-    
+
     # If either paramToDisplay or inputParam is NULL
     # Return a list of NULL values
     if (is.null(paramToDisplay) | is.null(inputParam)) return(list(
       'filter' = NULL,
       'param' = NULL
     ))
-    
-    
+
+
     # Return the sub parameters and parameter info
     return(list(
       'filter' = paramToDisplay,
       'param' = currentParam()
     ))
   })
-  
+
   # Create a debounced reactive expression returning the parameter info
   paramfilter_d <- paramfilter %>% debounce(1000)
-  
-  
-  
+
+
+
   ## Data manipulation logic ######################################################
-  
+
   # Create a data reactive expression that return a subset of the data
   # Using the dateRange, selectedSites_d and paramfilter_d reactive expressions
   data <- reactive({
     # Save the sub parameters to display
     paramCols <- paramfilter_d()$filter
-    
+
     # If there is no sub parameter return NULL
     if (is.null(paramCols)) return(NULL)
-    
+
     # Get a vector of column names containing the sd info for the current parameter
     sdCols <- paramfilter_d()$param$sd %>% str_split(',') %>% unlist()
     # If sdCols is not NULL and is NA
@@ -220,7 +220,7 @@ grabSamplesTimeSeries <- function(input, output, session, dateRange, pool) {
     if (!is.null(sdCols)) {
       if (sdCols %>% is.na()) sdCols <- NULL
     }
-    
+
     # Get a vector of column names containing the min and max info for the current parameter
     minMaxCols <- paramfilter_d()$param$min_max %>% str_split(',') %>% unlist()
     # If minMaxCols is not NULL and is NA
@@ -228,7 +228,7 @@ grabSamplesTimeSeries <- function(input, output, session, dateRange, pool) {
     if (!is.null(minMaxCols)) {
       if (minMaxCols %>% is.na()) minMaxCols <- NULL
     }
-    
+
     # Filter the data using the selected sites and the date range
     # And select the columns
     df <- getRows(
@@ -244,20 +244,20 @@ grabSamplesTimeSeries <- function(input, output, session, dateRange, pool) {
       # Parse the DATE and time
     ) %>% mutate(
       station = as.factor(station),
-      DATETIME_GMT = ymd_hms(paste(DATE_reading, TIME_reading_GMT), tz = 'GMT'),
+      DATETIME_GMT = ymd_hms(as.character(DATE_reading), as.character(TIME_reading_GMT), tz = 'GMT'),
       DATE_reading = ymd(DATE_reading),
       DATETIME_month_day_time_GMT = `year<-`(DATETIME_GMT, 2020)
       # Rename for the plotting function
     ) %>% rename(
       Site_ID = station
     )
-    
+
     # If there is no data return NULL
     if (nrow(df) == 0) return(NULL)
-    
+
     # Set the same arbitrary year for all the samples to plot all the results on one year
     year(df$DATETIME_month_day_time_GMT) <- 2020
-    
+
     # Select all relevant data.frame columns and pivot it to a long format
 
     df %>% pivot_longer(
@@ -266,15 +266,15 @@ grabSamplesTimeSeries <- function(input, output, session, dateRange, pool) {
       values_to = 'value'
     )
   })
-  
-  
+
+
   ## Plots output logic ###########################################################
-  
+
   # Render the regular timeserie plot
   output$lowfreq <- renderPlot({
     # If there are no data return NULL
     if (data() %>% is.null()) return(NULL)
-    
+
     # Create and return a timeSeriePlot
     timeSeriePlot(
       df = data(),
@@ -284,12 +284,12 @@ grabSamplesTimeSeries <- function(input, output, session, dateRange, pool) {
       sites = currentSites()
     )
   })
-  
+
   # Render the day of the year timeserie plot
   output$doy <- renderPlot({
     # If there are no data return NULL
     if (data() %>% is.null()) return(NULL)
-    
+
     # Create and return a DOYPlot
     DOYPlot(
       df = data(),
@@ -299,11 +299,11 @@ grabSamplesTimeSeries <- function(input, output, session, dateRange, pool) {
       sites = currentSites()
     )
   })
-  
-  
-  
+
+
+
   ## Plot hovering logic ##########################################################
-  
+
   # Activate the hover widget for the regular timeserie plot
   pointHoverWidgetServer(session, 'lowfreq', data, reactive(input$lowfreq_hover),
                          x_label = 'Date', y_label = 'parameter')
@@ -312,11 +312,11 @@ grabSamplesTimeSeries <- function(input, output, session, dateRange, pool) {
   pointHoverWidgetServer(session, 'doy', data, reactive(input$doy_hover),
                          x_label = 'Date', y_label = 'parameter',
                          override.mapping = list('x' = 'DATETIME_GMT'))
-  
-  
-  
+
+
+
   ## Stats summary modal logic ####################################################
-  
+
   # Render the stats tables in the modal
   output$stats <- renderStatsTables(
     elements = selectedSites_d,
@@ -324,7 +324,7 @@ grabSamplesTimeSeries <- function(input, output, session, dateRange, pool) {
     sites = currentSites,
     tableFunction = createStatsTablePerSite
   )
-  
+
   # Create an observeEvent that react to show stats button
   observeEvent(input$showstats, {
     # Create modal with the corresponding htmlOutput
@@ -338,11 +338,11 @@ grabSamplesTimeSeries <- function(input, output, session, dateRange, pool) {
       easyClose = TRUE
     ))
   })
-  
-  
-  
+
+
+
   ## Parameter description modal logic ############################################
-  
+
   # Create an observeEvent that react to the parameter helper icon button
   observeEvent(input$paramHelper, {
     # Render the description UI in the modal
@@ -350,7 +350,7 @@ grabSamplesTimeSeries <- function(input, output, session, dateRange, pool) {
       class = 'description',
       currentParam() %>% pull(description)
     ))
-    
+
     # Create modal with the corresponding htmlOutput
     showModal(modalDialog(
       title = 'Parameter description',
@@ -359,11 +359,11 @@ grabSamplesTimeSeries <- function(input, output, session, dateRange, pool) {
       easyClose = TRUE
     ))
   })
-  
-  
-  
+
+
+
   ## Update dateRange with plot brushing and double click logic ###################
-  
+
   # Create a reactive expression that contains the new dateRange to be used globally
   # With the same format as the input dateRange
   # Should be returned by the module
@@ -372,12 +372,12 @@ grabSamplesTimeSeries <- function(input, output, session, dateRange, pool) {
     'min' = as.Date(as.POSIXct(input$lowfreq_brush$xmin, origin = "1970-01-01", tz = "GMT")),
     'max' = as.Date(as.POSIXct(input$lowfreq_brush$xmax, origin = "1970-01-01", tz = "GMT"))
   ))
-  
+
   # Create a reactive value that update each time the plot is double clicked
   # Used as trigger to reset the date range in the outer module
   # Initialised to NULL to avoid a dateRange reset when a new unit is created
   resetDateRange <- reactiveVal(NULL)
-  
+
   # Create an observe event that react on plot double click to reset the date range
   observeEvent(input$lowfreq_dblclick, {
     if (is.null(resetDateRange())) {
@@ -386,11 +386,10 @@ grabSamplesTimeSeries <- function(input, output, session, dateRange, pool) {
       resetDateRange(resetDateRange() + 1)
     }
   })
-  
+
   # Return the new dateRange values and date range reset trigger in order to update the outer module dateRangeInput
   return(list(
     'update' = updateDateRange,
     'reset' = resetDateRange
   ))
 }
-

@@ -504,7 +504,7 @@ getDates <- function(pool, ..., descending = FALSE) {
     collect() %>%
     # Create the DATETIME
     mutate(
-      Date = ymd_hms(paste(DATE_reading, TIME_reading_GMT), tz = 'GMT')
+      Date = ymd_hms(as.character(DATE_reading), as.character(TIME_reading_GMT), tz = 'GMT')
     )
 
   # Order dates in an ascending or descending order

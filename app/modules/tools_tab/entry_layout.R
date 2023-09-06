@@ -10,12 +10,12 @@ entryLayoutUI <- function(id, pool, toolModuleUI, createNew = FALSE, ...) {
 #  - toolModuleUI: Function, the tool module UI function
 #  - createNew: Boolean, create or not the new button
 #  - ...: All other arguments needed by the inner module function
-# 
+#
 # Returns a div containing the layout
-  
+
   # Create namespace
   ns <- NS(id)
-  
+
   div(
     class = 'entry-layout',
     div(
@@ -90,27 +90,27 @@ entryLayout <- function(input, output, session, pool,
 #  - update: Reactive value, used as trigger for update
 #  - createNew: Boolean, create or not the new button
 #  - ...: All other arguments needed by the inner module function
-# 
+#
 # Returns a reactive expression containing a list with number of errors, warnings or success
-  
+
   ## Track observer ##############################################################
-  
+
   # Reactive values that contain the observers output
   observersOutput <- reactiveValues()
-  
-  
-  
-  
-  
+
+
+
+
+
   ## Date input logic ##############################################################
-  
+
   # Create a reactive value that track if the selection date must be updated
   updateDate <- reactiveVal(TRUE)
-  
+
   # Create an observeEvent that react to site change to update the date selection
   observersOutput$dateLogic <- observeEvent(input$site, ignoreInit = TRUE, {
     req(input$site)
-    
+
     # If the date must be updated then updated the date
     if (updateDate()) {
       updateSelectInput(session, 'date', choices = c(
@@ -122,13 +122,13 @@ entryLayout <- function(input, output, session, pool,
       updateDate(TRUE)
     }
   })
-  
+
   # Create a reactive expression that parse the datetime
   datetime <- reactive({
     req(input$date)
     # Parse datetime
     datetime <- ymd_hms(input$date, tz = 'GMT')
-    
+
     # If the input is a date
     if (!is.na(datetime)) {
       # Return a list containing the datetime, date and time components
@@ -144,13 +144,13 @@ entryLayout <- function(input, output, session, pool,
       )
     } else NULL
   })
-  
-  
-  
-  
-  
+
+
+
+
+
   ## New entry logic ##############################################################
-  
+
   if (createNew) {
     # Show modal for new data creation
     observersOutput$newLogic <- observeEvent(input$new, ignoreInit = TRUE, {
@@ -177,7 +177,7 @@ entryLayout <- function(input, output, session, pool,
         )
       ))
     })
-    
+
     # Date and time input validation
     dateTimeValidation <- reactive({
       all(
@@ -185,24 +185,24 @@ entryLayout <- function(input, output, session, pool,
         grepl('^[[:digit:]]{2}:[[:digit:]]{2}:[[:digit:]]{2}$', c(input$TIME_reading, input$Convert_to_GMT, input$TIME_reading_GMT))
       )
     })
-    
+
     # Create a reactive value to save error happening in the modal
     modalError <- reactiveVal('')
-    
+
     # Create an observeEvent that react to the modal cancel button
     observersOutput$cancelLogic <- observeEvent(input$cancel, ignoreInit = TRUE, {
       # Clear error
       modalError('')
-      
+
       # Close modal
       removeModal()
     })
-    
+
     # Create new row in the DB
     # Create an observeEvent that react to the modal create button
     observersOutput$createLogic <- observeEvent(input$create, ignoreInit = TRUE, {
       req(dateTimeValidation())
-      
+
       # Create new row
       error <- createData(
         pool = pool,
@@ -212,19 +212,19 @@ entryLayout <- function(input, output, session, pool,
         Convert_to_GMT = input$Convert_to_GMT,
         TIME_reading_GMT = input$TIME_reading_GMT
       )
-      
+
       # Save error
       modalError(error)
-      
+
       # If there is no error, remove the modal and populate the site and date inputs
       if (error == '') {
         # Remove modal and show success notif
         removeModal()
         showNotification('Row successfully created!', type = 'message')
-        
+
         # Indicate that the date should not update upon the next site selection
         updateDate(FALSE)
-        
+
         # Update inputs
         updateSelectizeInput(session, 'site', selected = input$station)
         updateSelectInput(session, 'date',
@@ -234,7 +234,7 @@ entryLayout <- function(input, output, session, pool,
                           ),
                           selected = paste(input$DATE_reading, input$TIME_reading_GMT))
       }
-      
+
       # Render the error, if any
       output$form_error <- renderText(shiny::validate(
         errorClass = 'form',
@@ -243,21 +243,21 @@ entryLayout <- function(input, output, session, pool,
       ))
     })
   }
-  
- 
-  
-  
-  
-  
-  
+
+
+
+
+
+
+
   ## Call tool module #############################################################
-  
+
   # Call module and retrieve data
   result <- callModule(toolModule, 'tool', pool, reactive(input$site), datetime, ...)
-  
+
   # Save observers
   observersOutput$toolModuleObservers <- result$observers
-  
+
   # Get errors and warnings and save observers
   observersOutput$errorLogic <- observeEvent(result$errors(), {
     # Add errors
@@ -271,55 +271,55 @@ entryLayout <- function(input, output, session, pool,
       result$errors()$warnings
     )
   })
-  
+
   # Display creation and update dates
   output$creationDate <- renderText(result$df() %>% pull(created_at))
-  
+
   output$updateDate <- renderText(result$df() %>% pull(updated_at))
-  
-  
-  
-  
-  
+
+
+
+
+
   ## Check logic #################################################################
-  
+
   # Track if check is done
   checked <- reactiveVal(FALSE)
-  
+
   # Track check warnings
   checkWarnings <- reactiveVal(tagList())
-  
+
   # Check the row values when check button is pressed
   observersOutput$checkLogic <- observeEvent(check(), ignoreInit = TRUE, {
     req(result$df(), check() != 0)
-    
+
     # Get row, columns not to check and columns to check
     noCheckCols <- result$noCheckCols()
     checkCols <- result$checkCols()
     row <- result$df() %>% select(-ends_with('id'), -all_of(noCheckCols))
-    
+
     # Get data distribution
     distribution <- getDistribution(pool, input$site, datetime()$date, colnames(row), checkCols)
-    
+
     # Perform check
     outliers <- checkDistribution(distribution$quantiles, row, checkCols)
-    
+
     # Add datetime column to distribution df and row
     distribution$df %<>% mutate(
-      DATETIME_GMT = ymd_hms(paste(DATE_reading, TIME_reading_GMT), tz = 'GMT'),
+      DATETIME_GMT = ymd_hms(as.character(DATE_reading), as.character(TIME_reading_GMT), tz = 'GMT'),
       DATE_reading = ymd(DATE_reading),
       DATETIME_month_day_time_GMT = `year<-`(DATETIME_GMT, 2020)
     )
-    
+
     row %<>% mutate(
-      DATETIME_GMT = ymd_hms(paste(DATE_reading, TIME_reading_GMT), tz = 'GMT'),
+      DATETIME_GMT = ymd_hms(as.character(DATE_reading), as.character(TIME_reading_GMT), tz = 'GMT'),
       DATE_reading = ymd(DATE_reading),
       DATETIME_month_day_time_GMT = `year<-`(DATETIME_GMT, 2020)
     )
-    
+
     # Track warnings
     warnings <- tagList()
-    
+
     # If there is an outlier
     if (length(outliers) > 0) {
       # For each outlier create a warning
@@ -356,11 +356,11 @@ entryLayout <- function(input, output, session, pool,
             )
           )
         })
-        
+
         # Return warning
         warning
       })
-      
+
       # Convert the list to a tagList
       for (warning in warningList) {
         warnings <- tagList(
@@ -369,27 +369,27 @@ entryLayout <- function(input, output, session, pool,
         )
       }
     }
-    
+
     # Set checkWarnings
     checkWarnings(warnings)
-    
+
     # Toggle checked
     checked(TRUE)
-    
+
     # Toggle updated
     updated(FALSE)
   })
-  
-  
-  
-  
-  
-  
+
+
+
+
+
+
   ## Update logic #################################################################
-  
+
   # Track if update is done
   updated <- reactiveVal(FALSE)
-  
+
   # Update the row when update button is pressed
   observersOutput$updateLogic <- observeEvent(update(), ignoreInit = TRUE, {
     req(result$df(), update() != 0, checked())
@@ -398,14 +398,14 @@ entryLayout <- function(input, output, session, pool,
     # Check that it is a single row
     if (nrow(row) == 1) {
       # Get updates
-      updates <- row %>% 
+      updates <- row %>%
         select(
           -c(id, station, DATE_reading, TIME_reading, Convert_to_GMT, TIME_reading_GMT, ends_with('_at'))
         ) %>% as.list()
-      
+
       # Remove NAs
       updates[sapply(updates, is.na)] <- NULL
-      
+
       # Send updates
       error <- updateData(
         pool = pool,
@@ -413,7 +413,7 @@ entryLayout <- function(input, output, session, pool,
         columns = names(updates),
         values = updates
       )
-      
+
       # Parse update errors
       if (error != '') {
         errors$errors <- c(
@@ -428,20 +428,20 @@ entryLayout <- function(input, output, session, pool,
         'Error: Cannot update an empty row or more than one row.'
       )
     }
-    
+
     # Set updated to TRUE, to display errors
     updated(TRUE)
-    
+
     # Reset checked and remove checkWarnings
     checked(FALSE)
     checkWarnings(tagList())
   })
-  
-  
-  
-  
+
+
+
+
   ## Reset updated and checked when data changes ######################################
-  
+
   # Reset updated and checked to false when site, date or row is changed
   observersOutput$resetUpdatedLogic <- observe({
     input$site;input$date;result$df()
@@ -449,16 +449,16 @@ entryLayout <- function(input, output, session, pool,
     checked(FALSE)
     checkWarnings(tagList())
   })
-  
-  
-  
-  
-  
+
+
+
+
+
   ## Error display logic ##########################################################
-  
+
   # Track errors
   errors <- reactiveValues(errors = c(), warnings = c())
-  
+
   # Render errors and warnings or success
   output$entryErrors <- renderUI({
     if (updated()) {
@@ -512,36 +512,36 @@ entryLayout <- function(input, output, session, pool,
       }
     }
   })
-  
-  
-  
-  
-  
-  
+
+
+
+
+
+
   ## Show/Hide content logic ######################################################
-  
+
   # Track content visibility
   showContent <- reactiveVal(TRUE)
-  
+
   # Show or hide content
   observersOutput$contentLogic <- observeEvent(input$show, ignoreInit = TRUE, {
     # Toggle showContent
     showContent(!showContent())
-    
+
     # Toggle content visibility
     toggleElement('content', anim = TRUE, condition = showContent())
-    
+
     # Update link icon
     if (showContent()) icon <- icon('chevron-up') else icon <- icon('chevron-down')
     updateActionButton(session, 'show', icon = icon)
   })
-  
-  
-  
-  
-  
+
+
+
+
+
   ## Return errors nb #############################################################
-  
+
   # Return a reactive expression
   return(
     list(
