@@ -15,7 +15,7 @@ connectToDB <- function() {
   )
 
   # Set charset for connection
-  dbGetQuery(pool, "SET NAMES 'utf8';")
+  dbExecute(pool, "SET NAMES 'utf8';")
 
   # Return pool
   return(pool)
@@ -119,7 +119,7 @@ sqlInterpolateList <- function(conn, sql, vars=list(), list_vars=list()) {
 sendQueryWithError <- function(pool, query) {
   # Send Query and catch errors
   result <- tryCatch(
-    dbGetQuery(pool, query),
+    dbExecute(pool, query),
     error = function(e) return(e$message)
   )
 
@@ -146,7 +146,7 @@ getEnumValues <- function(pool, table, column) {
   )
 
   # Run query
-  result <- dbGetQuery(pool, query)
+  result <- dbExecute(pool, query)
 
   # If not empty, parse the info
   if (nrow(result) == 1) {
