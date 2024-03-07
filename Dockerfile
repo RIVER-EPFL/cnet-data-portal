@@ -1,6 +1,10 @@
 FROM ghcr.io/river-epfl/metalp-data-portal:v1.0.0
 USER root
 
+RUN apt-get install -y locales && \
+  locale-gen en_US.UTF-8 && \
+  update-locale LANG=en_US.UTF-8
+
 # Delete the example application, copy dependency lock file and install R dependencies
 RUN rm -rf /srv/shiny-server/*
 COPY packages_installation.R renv.lock /srv/shiny-server/
@@ -18,7 +22,7 @@ RUN chown -R shiny:shiny /srv/shiny-server/ \
   && chown -R shiny:shiny /var/lib/shiny-server \
   && R -f assets_compilation.R
 
-  # Run as user shiny instead of root and expose the port
+# Run as user shiny instead of root and expose the port
 USER shiny
 EXPOSE 3838
 
