@@ -14,45 +14,45 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
 
-  metalp-portal:
+  cnet-portal:
     build:
       context: .
       dockerfile: Dockerfile
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.metalp_portal.rule=Host(`metalp.local`)"
-      - "traefik.http.services.metalp_portal.loadbalancer.server.port=3838"
+      - "traefik.http.routers.cnet_portal.rule=Host(`cnet.local`)"
+      - "traefik.http.services.cnet_portal.loadbalancer.server.port=3838"
     environment:
-      METALP_ENV: ${METALP_ENV}
-      METALP_DB_HOSTNAME: ${METALP_DB_HOSTNAME}
-      METALP_DB_PORT: ${METALP_DB_PORT}
-      METALP_DB_USERNAME: ${METALP_DB_USERNAME}
-      METALP_DB_PASSWORD: ${METALP_DB_PASSWORD}
-      METALP_DB_NAME: ${METALP_DB_NAME}
-      METALP_NOREPLY_ADDRESS: ${METALP_NOREPLY_ADDRESS}
-      METALP_TO_ADDRESS: ${METALP_TO_ADDRESS}
+      CNET_ENV: ${CNET_ENV}
+      CNET_DB_HOSTNAME: ${CNET_DB_HOSTNAME}
+      CNET_DB_PORT: ${CNET_DB_PORT}
+      CNET_DB_USERNAME: ${CNET_DB_USERNAME}
+      CNET_DB_PASSWORD: ${CNET_DB_PASSWORD}
+      CNET_DB_NAME: ${CNET_DB_NAME}
+      CNET_NOREPLY_ADDRESS: ${CNET_NOREPLY_ADDRESS}
+      CNET_TO_ADDRESS: ${CNET_TO_ADDRESS}
     networks:
       - web
     volumes:
       - ./data:/srv/shiny-server/data
       - ./db_backups:/srv/shiny-server/db_backups
     depends_on:
-      - metalp-db
+      - cnet-db
 
-  metalp-db:
+  cnet-db:
     image: mariadb:10.2.41
     environment:
-      MYSQL_ROOT_PASSWORD: ${METALP_DB_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${METALP_DB_NAME}
-      MYSQL_USER: ${METALP_DB_USERNAME}
-      MYSQL_PASSWORD: ${METALP_DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${CNET_DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${CNET_DB_NAME}
+      MYSQL_USER: ${CNET_DB_USERNAME}
+      MYSQL_PASSWORD: ${CNET_DB_PASSWORD}
     volumes:
-      - metalp-mariadb-data:/var/lib/mysql
+      - cnet-mariadb-data:/var/lib/mysql
     networks:
       - web
 
 volumes:
-  metalp-mariadb-data:
+  cnet-mariadb-data:
 
 networks:
   web:

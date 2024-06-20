@@ -1,6 +1,6 @@
-# METALP Data Portal
+# CNET Data Portal
 
-This Shiny app is meant to provide an easy interface for the METALP researchers to interact with their data. It can also be used as a data sharing portal accessible via the Web if wanted.
+This Shiny app is meant to provide an easy interface for the CNET researchers to interact with their data. It can also be used as a data sharing portal accessible via the Web if wanted.
 
 ## Dependecies
 
@@ -16,28 +16,28 @@ Core dependencies and installation steps are defined in the `Dockerfile` assumin
 
 ### Docker Compose
 
-Using the supplied `docker-compose.yml` file, a metalp portal, MariaDB database and Traefik reverse proxy will start, simulating a complete deployment. The `Makefile` can be used to build and deploy, using the environment variables listed below in a populated `.env` file to customise the backend.
+Using the supplied `docker-compose.yml` file, a cnet portal, MariaDB database and Traefik reverse proxy will start, simulating a complete deployment. The `Makefile` can be used to build and deploy, using the environment variables listed below in a populated `.env` file to customise the backend.
 
 #### Environment variables
 
 The environment variables are as follows:
 
 ```
-METALP_ENV               // Whether the application is in `production` or `development`
-METALP_DB_NAME           // The name of the database in MariaDB
-METALP_DB_HOSTNAME       // The hostname of the MariaDB server
-METALP_DB_PORT           // The port of the MariaDB server
-METALP_DB_USERNAME       // The username the portal uses to access MariaDB
-METALP_DB_PASSWORD       // The password the portal uses to access MariaDB
-METALP_NOREPLY_ADDRESS   // A noreply email address to send from
-METALP_TO_ADDRESS        // The email for contacting the site maintainer
+CNET_ENV               // Whether the application is in `production` or `development`
+CNET_DB_NAME           // The name of the database in MariaDB
+CNET_DB_HOSTNAME       // The hostname of the MariaDB server
+CNET_DB_PORT           // The port of the MariaDB server
+CNET_DB_USERNAME       // The username the portal uses to access MariaDB
+CNET_DB_PASSWORD       // The password the portal uses to access MariaDB
+CNET_NOREPLY_ADDRESS   // A noreply email address to send from
+CNET_TO_ADDRESS        // The email for contacting the site maintainer
 
 ---- Only needed if the MariaDB container is being used
-METALP_DB_ROOT_PASSWORD  // The root password of the MySQL container
+CNET_DB_ROOT_PASSWORD  // The root password of the MySQL container
 ```
 
 Note: If using a remote database, the docker compose file should be altered to disable
-the MariaDB container and remove its dependence from the metalp portal container.
+the MariaDB container and remove its dependence from the cnet portal container.
 
 
 #### Volume mapping
@@ -58,15 +58,15 @@ the `db_backups` directory holds the database dumps.
 make run
 ```
 
-By default, the reverse proxy will start on http port 80, and listen for connections to http://metalp.local. Add this hostname as a new line to your `/etc/hosts` system file, addressing your machine's local IP (`127.0.0.1`).
+By default, the reverse proxy will start on http port 80, and listen for connections to http://cnet.local. Add this hostname as a new line to your `/etc/hosts` system file, addressing your machine's local IP (`127.0.0.1`).
 
 ```bash
 # Static table lookup for hostnames.
 
-127.0.0.1 metalp.local
+127.0.0.1 cnet.local
 ```
 
-You should be able to access the site at [http://metalp.local](http://metalp.local).
+You should be able to access the site at [http://cnet.local](http://cnet.local).
 
 ### Ubuntu
 
@@ -123,7 +123,7 @@ The `js` directory contains all the _JavaScript_ code organized in different fil
 ### Other _R_ script files
 
 #### secrets.R
-A `secrets.R` file **is required** and should contains all sensible information, such as DB name or password. These information are saved in environment variables when the file is sourced during the app startup. More info at https://github.com/mclement18/METALP-Portal-server/tree/master/app_deployment#create-or-update-secretr-file
+A `secrets.R` file **is required** and should contains all sensible information, such as DB name or password. These information are saved in environment variables when the file is sourced during the app startup. More info at https://github.com/mclement18/CNET-Portal-server/tree/master/app_deployment#create-or-update-secretr-file
 
 #### packages_installation.R
 The `packages_installation.R` file contains instructions to install the _R_ packages with the correct version. To install them, just run the script file. Currently, only the `dbplyr` package need a specific version for the app to work.
@@ -143,4 +143,4 @@ The `data` directory should contain the sensor data that are loaded during the a
 The `db_backups` directory **should be present** and will contains all the _SQL_ database backups made with the DB backup functionnality of the portal actions module. See `modules/portal_management/portal_actions.R` file for more information.
 
 ## App deployment
-Detail information on how to deploy this app on an _Ubuntu_ server can be found here: https://github.com/mclement18/METALP-Portal-server/tree/master/app_deployment
+Detail information on how to deploy this app on an _Ubuntu_ server can be found here: https://github.com/mclement18/CNET-Portal-server/tree/master/app_deployment
