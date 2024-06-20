@@ -177,7 +177,7 @@ ui <- tagList(
         # Load the custom logo for the navbar title
         htmlTemplate('./html_components/logo.html'),
         # Set a window browser window title
-        windowTitle = 'METALP DATA PORTAL',
+        windowTitle = 'C-NET PORTAL',
         # Create the about tab
         tabPanel(
           # Create a tab title with an icon
