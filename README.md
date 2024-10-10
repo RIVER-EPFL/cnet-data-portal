@@ -144,3 +144,29 @@ The `db_backups` directory **should be present** and will contains all the _SQL_
 
 ## App deployment
 Detail information on how to deploy this app on an _Ubuntu_ server can be found here: https://github.com/mclement18/CNET-Portal-server/tree/master/app_deployment
+
+## To remove/add columns 
+Delete from the respective table (data, etc), and ensure that the `grab_param_categories` does or does not contain the column name. The portal will get the columns from this table to populate the data grid. The function that is doing this is located in `/app/modules/data_management_tab/grab_data.R`:
+```
+    # Get the selected parameter category
+    paramCat <- input$paramCategory
+    # If all categories are selected
+    if (paramCat == 'All') {
+      # Get all categories
+      columns <- getRows(
+        pool,
+        'grab_param_categories',
+        columns = c('order', 'param_name')
+      ) %>%
+        pull(param_name)
+    } else {
+      # Else get only the selected one
+      columns <- getRows(
+        pool,
+        'grab_param_categories',
+        category == paramCat,
+        columns = c('order', 'param_name')
+      ) %>%
+        pull(param_name)
+    }
+```
