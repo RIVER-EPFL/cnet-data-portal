@@ -1,4 +1,3 @@
-version: "3"
 services:
   traefik:
     container_name: traefik
@@ -9,51 +8,45 @@ services:
       - "--entrypoints.web.address=:80"
     ports:
       - "80:80"
-    networks:
-      - web
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
 
   cnet-portal:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    ## Uncomment to build from the repository
+    # build:
+      # context: .
+      # dockerfile: Dockerfile
+    image: ghcr.io/river-epfl/cnet-data-portal:latest
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.cnet_portal.rule=Host(`cnet.local`)"
       - "traefik.http.services.cnet_portal.loadbalancer.server.port=3838"
     environment:
-      CNET_ENV: ${CNET_ENV}
-      CNET_DB_HOSTNAME: ${CNET_DB_HOSTNAME}
-      CNET_DB_PORT: ${CNET_DB_PORT}
-      CNET_DB_USERNAME: ${CNET_DB_USERNAME}
-      CNET_DB_PASSWORD: ${CNET_DB_PASSWORD}
-      CNET_DB_NAME: ${CNET_DB_NAME}
-      CNET_NOREPLY_ADDRESS: ${CNET_NOREPLY_ADDRESS}
-      CNET_TO_ADDRESS: ${CNET_TO_ADDRESS}
-    networks:
-      - web
+      CNET_ENV: prod
+      CNET_DB_HOSTNAME: cnet-db
+      CNET_DB_PORT: 3306
+      CNET_DB_USERNAME: cnet
+      CNET_DB_PASSWORD: cnet
+      CNET_DB_NAME: cnet_db
+      CNET_NOREPLY_ADDRESS: cnet@noreply.com
+      CNET_TO_ADDRESS: cnet@noreply.com
     volumes:
-      - ./data:/srv/shiny-server/data
-      - ./db_backups:/srv/shiny-server/db_backups
+     - ./data:/srv/shiny-server/data
+     - ./db_backups:/srv/shiny-server/db_backups
     depends_on:
       - cnet-db
 
   cnet-db:
     image: mariadb:10.2.41
     environment:
-      MYSQL_ROOT_PASSWORD: ${CNET_DB_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${CNET_DB_NAME}
-      MYSQL_USER: ${CNET_DB_USERNAME}
-      MYSQL_PASSWORD: ${CNET_DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: cnet
+      MYSQL_DATABASE: cnet_db
+      MYSQL_USER: cnet
+      MYSQL_PASSWORD: cnet
     volumes:
       - cnet-mariadb-data:/var/lib/mysql
-    networks:
-      - web
+    ports:
+      - 3306:3306
 
 volumes:
   cnet-mariadb-data:
-
-networks:
-  web:
-    driver: bridge
