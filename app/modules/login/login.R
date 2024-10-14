@@ -53,9 +53,9 @@ login <- function(input, output, session, pool) {
   
   
   
-  ## Login modal display ##########################################################
-  
-  # Create observeEvent that react to the showLoginForm button
+## Login modal display ##########################################################
+
+  # Create observeEvent that reacts to the showLoginForm button
   observeEvent(input$showLoginForm, ignoreInit = TRUE, {
     req(user$loggedin == FALSE)
     # Create a modal dialog
@@ -64,11 +64,19 @@ login <- function(input, output, session, pool) {
         title = 'Log In', size = 's',
         div(
           class = 'login-form',
-          # Add an text output to log the errors
+          # Add a text output to log the errors
           textOutput(session$ns('loginError')),
           # Username and password inputs
           textInput(session$ns('username'), 'Username'),
           passwordInput(session$ns('password'), 'Password'),
+          # JavaScript code to detect Enter key press
+          tags$script(HTML(paste0("
+            $('#", session$ns('username'), ", #", session$ns('password'), "').keypress(function(e) {
+              if (e.which == 13) {
+                $('#", session$ns('login'), "').click();
+              }
+            });
+          ")))
         ),
         # Action buttons
         footer = tagList(
@@ -78,9 +86,8 @@ login <- function(input, output, session, pool) {
       )
     )
   })
-  
-  
-  
+
+
   
   
   ## Login logic ##################################################################
