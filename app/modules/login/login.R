@@ -69,12 +69,17 @@ login <- function(input, output, session, pool) {
           # Username and password inputs
           textInput(session$ns('username'), 'Username'),
           passwordInput(session$ns('password'), 'Password'),
-          # JavaScript code to detect Enter key press
+          # JavaScript code to detect Enter key press and focus on Username field
           tags$script(HTML(paste0("
+            // Detect Enter key press to trigger Login button
             $('#", session$ns('username'), ", #", session$ns('password'), "').keypress(function(e) {
               if (e.which == 13) {
                 $('#", session$ns('login'), "').click();
               }
+            });
+            // Set focus to Username field when modal is fully shown
+            $(document).on('shown.bs.modal', function() {
+              $('#", session$ns('username'), "').focus();
             });
           ")))
         ),
