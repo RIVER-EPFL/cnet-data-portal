@@ -114,7 +114,7 @@ highFreqTimeSeriesUI <- function(id, pool) {
 
 ## Create the server function of the module ###############################################
 
-highFreqTimeSeries <- function(input, output, session, df, pool) {
+highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
 # Create the logic for the highFreqTimeSeries module
 # Parameters:
 #  - input, output, session: Default needed parameters to create a module
@@ -126,15 +126,6 @@ highFreqTimeSeries <- function(input, output, session, df, pool) {
 #  - pool: The pool connection to the database
 # 
 # Returns a reactive expression containing the updated date range with the same format as the input
-
-
-  ## Define the fixed date range here #############################################
-  dateRange <- reactive({
-    list(
-      min = as.Date("2024-05-15"),
-      max = as.Date("2024-12-31")
-    )
-  })
   
   ## Stations update logic ########################################################
   
