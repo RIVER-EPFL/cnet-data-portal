@@ -198,11 +198,31 @@ sidebarInputLayout <- function(input, output, session,
     # Call new unit module function and retrieve, if any, the named list containing:
     #  - update: Reactive expression containing the updated dateRange
     #  - reset: Reactive value, updated each time the plot is double clicked, used as dateRange reset trigger
+    ##if (is.null(df)) {
+    ##  dateRangeActions <- callModule(innerModule, unitsNb(), dateRange, ...)
+    ##} else {
+    ##  dateRangeActions <- callModule(innerModule, unitsNb(), df, dateRange, ...)
+    ##}
+
     if (is.null(df)) {
-      dateRangeActions <- callModule(innerModule, unitsNb(), dateRange, ...)
+      dateRangeActions <- callModule(
+      innerModule,
+      "1",
+      df = NULL,
+      dateRange = dateRange,
+      ...
+      )
     } else {
-      dateRangeActions <- callModule(innerModule, unitsNb(), df, dateRange, ...)
+      dateRangeActions <- callModule(
+      innerModule,
+      "1",
+      df = df,
+      dateRange = dateRange,
+      ...
+    )
     }
+
+    ################# here
     
     # If the inner module plots are modifying the date range
     if (plotDateRangeSelection) {
