@@ -132,7 +132,7 @@ highFreqTimeSeries <- function(input, output, session, df, pool) {
   dateRange <- reactive({
     list(
       min = as.Date("2024-05-15"),
-      max = Sys.Date()
+      max = as.Date("2024-12-31")
     )
   })
   
