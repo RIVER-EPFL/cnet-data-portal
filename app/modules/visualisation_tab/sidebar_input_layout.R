@@ -28,7 +28,7 @@ sidebarInputLayoutUI <- function(id, minDate, maxDate, innerModuleUI, ...) {
       # Date Range to select the global dateRange
       dateRangeInput(ns('time'), 'Date range:',
                      start = "2024-05-15",
-                     end = "2024-12-31",,
+                     end = "2024-12-31",
                      min = minDate,
                      max = maxDate,
                      format = 'dd/mm/yyyy',
