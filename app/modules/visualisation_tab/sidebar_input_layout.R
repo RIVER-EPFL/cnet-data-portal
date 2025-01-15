@@ -30,7 +30,7 @@ sidebarInputLayoutUI <- function(id, minDate, maxDate, innerModuleUI, ...) {
                      start = "2024-05-15",
                      end = "2024-12-31",
                      min = minDate,
-                     max = maxDate,
+                     max = "2024-12-31",
                      format = 'dd/mm/yyyy',
                      separator = '-'),
       # Create a nutton to reset the date range
