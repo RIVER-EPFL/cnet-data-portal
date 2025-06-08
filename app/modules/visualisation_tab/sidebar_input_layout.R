@@ -135,9 +135,17 @@ sidebarInputLayout <- function(input, output, session,
   # If the inner module plots are modifying the date range
   if (plotDateRangeSelection) {
     # Add an observeEvent that track the plot brushing dateRange input for the first innerModule unit
-    observeEvent(dateRangeActions$update(), ignoreInit = TRUE, {
+    observeEvent(dateRangeActions$update, ignoreInit = TRUE, {
+      # Debug: Log when this observer is triggered
+      session$sendCustomMessage("console-log", "DEBUG: sidebar observeEvent triggered for dateRangeActions$update")
+      
       # Safely get the update values
       updateValues <- dateRangeActions$update()
+      
+      # Debug: Log the update values
+      session$sendCustomMessage("console-log", 
+        paste("DEBUG: sidebar received update values:", 
+              if(is.null(updateValues)) "NULL" else paste(updateValues$min, "to", updateValues$max)))
       
       # Check if update values exist and are valid
       if (is.null(updateValues) || 
@@ -145,6 +153,7 @@ sidebarInputLayout <- function(input, output, session,
           is.null(updateValues$max) ||
           length(updateValues$min) == 0 || 
           length(updateValues$max) == 0) {
+        session$sendCustomMessage("console-log", "DEBUG: sidebar - update values are invalid, returning")
         return()
       }
       
@@ -273,7 +282,7 @@ sidebarInputLayout <- function(input, output, session,
     # If the inner module plots are modifying the date range
     if (plotDateRangeSelection) {
       # Add an observeEvent that track the plot brushing dateRange input for the new module unit
-      observeEvent(dateRangeActions$update(), ignoreInit = TRUE, {
+      observeEvent(dateRangeActions$update, ignoreInit = TRUE, {
         # Debug: Log when this observer is triggered
         session$sendCustomMessage("console-log", "DEBUG: sidebar observeEvent triggered for dateRangeActions$update()")
         
