@@ -379,36 +379,10 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
   # With the same format as the input dateRange
   # Should be returned by the module
   # Converting number to date using the Linux epoch time as origin
-  updateDateRange <- reactive({
-    # Validate brush input exists and has valid coordinates
-    req(input$highfreq_brush)
-    req(input$highfreq_brush$xmin)
-    req(input$highfreq_brush$xmax)
-    
-    # Validate that coordinates are numeric and in correct order
-    if (!is.numeric(input$highfreq_brush$xmin) || 
-        !is.numeric(input$highfreq_brush$xmax) ||
-        input$highfreq_brush$xmin >= input$highfreq_brush$xmax) {
-      return(NULL)
-    }
-    
-    # Convert to dates with error handling
-    tryCatch({
-      min_date <- as.Date(as.POSIXct(input$highfreq_brush$xmin, origin = "1970-01-01", tz = "GMT"))
-      max_date <- as.Date(as.POSIXct(input$highfreq_brush$xmax, origin = "1970-01-01", tz = "GMT"))
-      
-      # Validate converted dates
-      if (is.na(min_date) || is.na(max_date) || min_date >= max_date) {
-        return(NULL)
-      }
-      
-      # Return the valid date range
-      list('min' = min_date, 'max' = max_date)
-    }, error = function(e) {
-      # Return NULL if conversion fails
-      return(NULL)
-    })
-  })
+  updateDateRange <- reactive(list(
+    'min' = as.Date(as.POSIXct(input$highfreq_brush$xmin, origin = "1970-01-01", tz = "GMT")),
+    'max' = as.Date(as.POSIXct(input$highfreq_brush$xmax, origin = "1970-01-01", tz = "GMT"))
+  ))
   
   # Create a reactive value that update each time the plot is double clicked
   # Used as trigger to reset the date range in the outer module
@@ -430,3 +404,4 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
     'reset' = resetDateRange
   ))
 }
+

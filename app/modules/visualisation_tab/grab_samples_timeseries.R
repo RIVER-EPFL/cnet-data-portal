@@ -63,12 +63,6 @@ grabSamplesTimeSeriesUI <- function(id, pool) {
       # Set UI plots id and class
       id = paste0('time-serie-plots-', id),
       class = 'time-serie-plot two-plots point-hover-widget-plot',
-      # Add JavaScript for console logging
-      tags$script("
-        Shiny.addCustomMessageHandler('console-log', function(message) {
-          console.log(message);
-        });
-      "),
       # Create a plotOutput for the regular timeserie plot
       spinnerPlotOutput(
         ns('lowfreq'),
@@ -96,7 +90,7 @@ grabSamplesTimeSeriesUI <- function(id, pool) {
 
 ## Create the server function of the module ###############################################
 
-grabSamplesTimeSeries <- function(input, output, session, dateRange, pool, parentSession = NULL) {
+grabSamplesTimeSeries <- function(input, output, session, dateRange, pool) {
 # Create the logic for the grabSamplesTimeSeries module
 # Parameters:
 #  - input, output, session: Default needed parameters to create a module
@@ -105,7 +99,6 @@ grabSamplesTimeSeries <- function(input, output, session, dateRange, pool, paren
 #               + min: Date, the lower bound to filter the date
 #               + max: Date, the upper bound to filter the data
 #  - pool: The pool connection to the database
-#  - parentSession: The parent session of the module
 # 
 # Returns a reactive expression containing the updated date range with the same format as the input
   
@@ -371,80 +364,33 @@ grabSamplesTimeSeries <- function(input, output, session, dateRange, pool, paren
   
   ## Update dateRange with plot brushing and double click logic ###################
   
-  # Direct brush handling - bypass module return system
-  # Update the date range input directly in the sidebarInputLayout module
+  # Create a reactive expression that contains the new dateRange to be used globally
+  # With the same format as the input dateRange
+  # Should be returned by the module
+  # Converting number to date using the Linux epoch time as origin
+  updateDateRange <- reactive(list(
+    'min' = as.Date(as.POSIXct(input$lowfreq_brush$xmin, origin = "1970-01-01", tz = "GMT")),
+    'max' = as.Date(as.POSIXct(input$lowfreq_brush$xmax, origin = "1970-01-01", tz = "GMT"))
+  ))
   
-  # Observe brush events and directly update the date range input
-  observeEvent(input$lowfreq_brush, {
-    brush <- input$lowfreq_brush
-    
-    # Validate brush coordinates
-    if (is.null(brush) || 
-        is.null(brush$xmin) || 
-        is.null(brush$xmax) ||
-        !is.numeric(brush$xmin) ||
-        !is.numeric(brush$xmax) ||
-        brush$xmin >= brush$xmax) {
-      return()
-    }
-    
-    # Convert brush coordinates to dates with error handling
-    tryCatch({
-      min_date <- as.Date(as.POSIXct(brush$xmin, origin = "1970-01-01", tz = "GMT"))
-      max_date <- as.Date(as.POSIXct(brush$xmax, origin = "1970-01-01", tz = "GMT"))
-      
-      # Validate converted dates
-      if (is.na(min_date) || is.na(max_date) || min_date >= max_date) {
-        return()
-      }
-      
-      # Additional validation for reasonable date range
-      current_year <- as.numeric(format(Sys.Date(), "%Y"))
-      if (as.numeric(format(min_date, "%Y")) < 1900 || 
-          as.numeric(format(max_date, "%Y")) > (current_year + 10)) {
-        showNotification("Date range is outside valid range. Please select dates within a reasonable timeframe.", 
-                         type = "warning", duration = 4)
-        return()
-      }
-      
-      # Debug message
-      session$sendCustomMessage("console-log", 
-        paste("DEBUG: Grab samples brush triggered with:", min_date, "to", max_date))
-      
-      # Directly update the date range input using the parent session
-      tryCatch({
-        targetSession <- if (!is.null(parentSession)) parentSession else session$parent
-        updateDateRangeInput(targetSession, 'time', start = min_date, end = max_date)
-        showNotification("Zoom applied successfully!", type = "message", duration = 2)
-        session$sendCustomMessage("console-log", "DEBUG: Grab samples date range updated successfully")
-      }, error = function(e) {
-        session$sendCustomMessage("console-log", 
-          paste("DEBUG: Failed to update date range:", e$message))
-        showNotification("Failed to apply zoom. Please try again.", type = "error", duration = 3)
-      })
-      
-    }, error = function(e) {
-      session$sendCustomMessage("console-log", 
-        paste("DEBUG: Error processing brush coordinates:", e$message))
-    })
-  }, ignoreInit = TRUE, ignoreNULL = TRUE)
+  # Create a reactive value that update each time the plot is double clicked
+  # Used as trigger to reset the date range in the outer module
+  # Initialised to NULL to avoid a dateRange reset when a new unit is created
+  resetDateRange <- reactiveVal(NULL)
   
-  # Handle double-click to reset date range
+  # Create an observe event that react on plot double click to reset the date range
   observeEvent(input$lowfreq_dblclick, {
-    tryCatch({
-      # Reset to original date range
-      targetSession <- if (!is.null(parentSession)) parentSession else session$parent
-      updateDateRangeInput(targetSession, 'time', 
-                          start = min(df$Date, na.rm = TRUE), 
-                          end = max(df$Date, na.rm = TRUE))
-      showNotification("Date range reset!", type = "message", duration = 2)
-      session$sendCustomMessage("console-log", "DEBUG: Grab samples date range reset")
-    }, error = function(e) {
-      session$sendCustomMessage("console-log", 
-        paste("DEBUG: Failed to reset date range:", e$message))
-    })
+    if (is.null(resetDateRange())) {
+      resetDateRange(1)
+    } else {
+      resetDateRange(resetDateRange() + 1)
+    }
   })
   
-  # Return NULL since we're bypassing the module return system
-  return(NULL)
+  # Return the new dateRange values and date range reset trigger in order to update the outer module dateRangeInput
+  return(list(
+    'update' = updateDateRange,
+    'reset' = resetDateRange
+  ))
 }
+

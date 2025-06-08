@@ -119,7 +119,6 @@ visualisationTab <- function(input, output, session, pool, user, hfDf) {
              ),
              minDate = hfMinMaxDates$min,
              maxDate = hfMinMaxDates$max,
-             plotDateRangeSelection = FALSE,  # highFreqTimeSeries takes df parameter
              df = hfDf,
              pool = pool)
 
