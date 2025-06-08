@@ -170,8 +170,25 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
   # Create a data reactive expression that return a subset of the data
   # Using the dateRange, selectedSites_d and param reactive expressions
   data <- reactive({
+    # Validate inputs before processing
+    req(dateRange())
+    req(selectedSites_d())
+    req(param())
+    
+    # Additional validation for date range
+    if (is.null(dateRange()$min) || is.null(dateRange()$max) ||
+        !inherits(dateRange()$min, "Date") || !inherits(dateRange()$max, "Date") ||
+        dateRange()$min >= dateRange()$max) {
+      return(NULL)
+    }
+    
     # Select df
     df <- df[[input$dataFreq]]
+    
+    # Validate that df exists and has data
+    if (is.null(df) || nrow(df) == 0) {
+      return(NULL)
+    }
     
     # If the raw data is selected filter also for modeled data
     if (input$dataFreq == '10min') {
@@ -220,14 +237,24 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
     # If there are no data return NULL
     if (data() %>% is.null()) return(NULL)
     
-    # Create and return a highFreqTimeSeriePlot
-    highFreqTimeSeriePlot(
-      df = data(),
-      parameter = param(),
-      plotTitle = 'Sensor High Frequency Time Serie',
-      sites = sites,
-      modeledData = 'data_type' %in% colnames(data())
-    )
+    # Additional validation for data structure
+    if (nrow(data()) == 0) return(NULL)
+    
+    # Try to create the plot with error handling
+    tryCatch({
+      # Create and return a highFreqTimeSeriePlot
+      highFreqTimeSeriePlot(
+        df = data(),
+        parameter = param(),
+        plotTitle = 'Sensor High Frequency Time Serie',
+        sites = sites,
+        modeledData = 'data_type' %in% colnames(data())
+      )
+    }, error = function(e) {
+      # Return a simple error plot instead of crashing
+      plot(1, 1, type = "n", xlab = "", ylab = "", main = "Error rendering plot")
+      text(1, 1, paste("Plot error:", e$message), cex = 0.8)
+    })
   })
   
   
@@ -380,15 +407,13 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
   # Should be returned by the module
   # Converting number to date using the Linux epoch time as origin
   updateDateRange <- reactive({
-    # Validate brush coordinates before conversion
-    req(input$highfreq_brush)
-    req(!is.null(input$highfreq_brush$xmin))
-    req(!is.null(input$highfreq_brush$xmax))
-    req(is.numeric(input$highfreq_brush$xmin))
-    req(is.numeric(input$highfreq_brush$xmax))
-    
-    # Additional validation to ensure coordinates are reasonable
-    if (input$highfreq_brush$xmin >= input$highfreq_brush$xmax) {
+    # Check if brush exists and has valid coordinates
+    if (is.null(input$highfreq_brush) || 
+        is.null(input$highfreq_brush$xmin) || 
+        is.null(input$highfreq_brush$xmax) ||
+        !is.numeric(input$highfreq_brush$xmin) ||
+        !is.numeric(input$highfreq_brush$xmax) ||
+        input$highfreq_brush$xmin >= input$highfreq_brush$xmax) {
       return(NULL)
     }
     
@@ -398,7 +423,7 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
       max_date <- as.Date(as.POSIXct(input$highfreq_brush$xmax, origin = "1970-01-01", tz = "GMT"))
       
       # Validate that the converted dates are reasonable
-      if (is.na(min_date) || is.na(max_date)) {
+      if (is.na(min_date) || is.na(max_date) || min_date >= max_date) {
         return(NULL)
       }
       
@@ -407,8 +432,7 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
         'max' = max_date
       )
     }, error = function(e) {
-      # Log the error for debugging purposes
-      warning("Error converting brush coordinates to dates: ", e$message)
+      # Return NULL on error instead of warning to avoid console spam
       return(NULL)
     })
   })

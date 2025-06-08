@@ -369,15 +369,13 @@ grabSamplesTimeSeries <- function(input, output, session, dateRange, pool) {
   # Should be returned by the module
   # Converting number to date using the Linux epoch time as origin
   updateDateRange <- reactive({
-    # Validate brush coordinates before conversion
-    req(input$lowfreq_brush)
-    req(!is.null(input$lowfreq_brush$xmin))
-    req(!is.null(input$lowfreq_brush$xmax))
-    req(is.numeric(input$lowfreq_brush$xmin))
-    req(is.numeric(input$lowfreq_brush$xmax))
-    
-    # Additional validation to ensure coordinates are reasonable
-    if (input$lowfreq_brush$xmin >= input$lowfreq_brush$xmax) {
+    # Check if brush exists and has valid coordinates
+    if (is.null(input$lowfreq_brush) || 
+        is.null(input$lowfreq_brush$xmin) || 
+        is.null(input$lowfreq_brush$xmax) ||
+        !is.numeric(input$lowfreq_brush$xmin) ||
+        !is.numeric(input$lowfreq_brush$xmax) ||
+        input$lowfreq_brush$xmin >= input$lowfreq_brush$xmax) {
       return(NULL)
     }
     
@@ -387,7 +385,7 @@ grabSamplesTimeSeries <- function(input, output, session, dateRange, pool) {
       max_date <- as.Date(as.POSIXct(input$lowfreq_brush$xmax, origin = "1970-01-01", tz = "GMT"))
       
       # Validate that the converted dates are reasonable
-      if (is.na(min_date) || is.na(max_date)) {
+      if (is.na(min_date) || is.na(max_date) || min_date >= max_date) {
         return(NULL)
       }
       
@@ -396,8 +394,7 @@ grabSamplesTimeSeries <- function(input, output, session, dateRange, pool) {
         'max' = max_date
       )
     }, error = function(e) {
-      # Log the error for debugging purposes
-      warning("Error converting brush coordinates to dates: ", e$message)
+      # Return NULL on error instead of warning to avoid console spam
       return(NULL)
     })
   })
