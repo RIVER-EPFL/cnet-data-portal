@@ -63,6 +63,12 @@ grabSamplesTimeSeriesUI <- function(id, pool) {
       # Set UI plots id and class
       id = paste0('time-serie-plots-', id),
       class = 'time-serie-plot two-plots point-hover-widget-plot',
+      # Add JavaScript for console logging
+      tags$script("
+        Shiny.addCustomMessageHandler('console-log', function(message) {
+          console.log(message);
+        });
+      "),
       # Create a plotOutput for the regular timeserie plot
       spinnerPlotOutput(
         ns('lowfreq'),
@@ -390,7 +396,8 @@ grabSamplesTimeSeries <- function(input, output, session, dateRange, pool) {
       }
       
       # Debug: Log grab samples brush activity
-      cat("DEBUG: Grab samples brush triggered with:", min_date, "to", max_date, "\n")
+      session$sendCustomMessage("console-log", 
+        paste("DEBUG: Grab samples brush triggered with:", min_date, "to", max_date))
       
       list(
         'min' = min_date,
