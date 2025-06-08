@@ -130,17 +130,32 @@ sidebarInputLayout <- function(input, output, session,
   if (plotDateRangeSelection) {
     # Add an observeEvent that track the plot brushing dateRange input for the first innerModule unit
     observeEvent(dateRangeActions$update(), ignoreInit = TRUE, {
-      # Run only if dates are non null
-      req(length(dateRangeActions$update()$min) != 0, length(dateRangeActions$update()$min) != 0)
+      # Run only if dates are non null and valid
+      req(dateRangeActions$update())
+      req(!is.null(dateRangeActions$update()$min))
+      req(!is.null(dateRangeActions$update()$max))
+      req(length(dateRangeActions$update()$min) != 0)
+      req(length(dateRangeActions$update()$max) != 0)
+      
       # Store new dates
       newMin <- dateRangeActions$update()$min
       newMax <- dateRangeActions$update()$max
+      
+      # Additional validation to ensure dates are valid Date objects
+      if (!inherits(newMin, "Date") || !inherits(newMax, "Date")) {
+        return()
+      }
       
       # Ensure that dates are within range
       if (newMin < date(minDate)) newMin <- minDate
       if (newMax < date(minDate)) newMax <- minDate
       if (newMin > date(maxDate)) newMin <- maxDate
       if (newMax > date(maxDate)) newMax <- maxDate
+      
+      # Ensure min is not greater than max
+      if (newMin >= newMax) {
+        return()
+      }
       
       # Update the dateRangeInput accordingly
       updateDateRangeInput(session, 'time', start = newMin, end = newMax)
@@ -228,17 +243,32 @@ sidebarInputLayout <- function(input, output, session,
     if (plotDateRangeSelection) {
       # Add an observeEvent that track the plot brushing dateRange input for the new module unit
       observeEvent(dateRangeActions$update(), ignoreInit = TRUE, {
-        # Run only if dates are non null
-        req(length(dateRangeActions$update()$min) != 0, length(dateRangeActions$update()$min) != 0)
+        # Run only if dates are non null and valid
+        req(dateRangeActions$update())
+        req(!is.null(dateRangeActions$update()$min))
+        req(!is.null(dateRangeActions$update()$max))
+        req(length(dateRangeActions$update()$min) != 0)
+        req(length(dateRangeActions$update()$max) != 0)
+        
         # Store new dates
         newMin <- dateRangeActions$update()$min
         newMax <- dateRangeActions$update()$max
+        
+        # Additional validation to ensure dates are valid Date objects
+        if (!inherits(newMin, "Date") || !inherits(newMax, "Date")) {
+          return()
+        }
         
         # Ensure that dates are within range
         if (newMin < date(minDate)) newMin <- minDate
         if (newMax < date(minDate)) newMax <- minDate
         if (newMin > date(maxDate)) newMin <- maxDate
         if (newMax > date(maxDate)) newMax <- maxDate
+        
+        # Ensure min is not greater than max
+        if (newMin >= newMax) {
+          return()
+        }
         
         # Update the dateRangeInput accordingly
         updateDateRangeInput(session, 'time', start = newMin, end = newMax)
