@@ -123,10 +123,12 @@ sidebarInputLayout <- function(input, output, session,
   
   ## First unit module calling ####################################################
 
-  # Call the inner module
+  # Call the inner module with correct parameters based on module signature
   if (plotDateRangeSelection) {
+    # For modules that DON'T take df (like grabSamplesTimeSeries)
     callModule(innerModule, '1', dateRange, ...)
   } else {
+    # For modules that DO take df (like highFreqTimeSeries)
     callModule(innerModule, '1', df, dateRange, ...)
   }
   
@@ -167,13 +169,13 @@ sidebarInputLayout <- function(input, output, session,
       immediate = TRUE
     )
     
-    # Call new unit module function and retrieve, if any, the named list containing:
-    #  - update: Reactive expression containing the updated dateRange
-    #  - reset: Reactive value, updated each time the plot is double clicked, used as dateRange reset trigger
-    if (is.null(df)) {
-      callModule(innerModule, "1", dateRange, ...)
+    # Call new unit module function with correct parameters based on module signature
+    if (plotDateRangeSelection) {
+      # For modules that DON'T take df (like grabSamplesTimeSeries)
+      callModule(innerModule, unitsNb(), dateRange, ...)
     } else {
-      callModule(innerModule, "1", df, dateRange, ...)
+      # For modules that DO take df (like highFreqTimeSeries)
+      callModule(innerModule, unitsNb(), df, dateRange, ...)
     }
   })
   
