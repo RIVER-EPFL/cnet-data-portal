@@ -487,16 +487,30 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
             
             # Validate dates
             if (!is.na(min_date) && !is.na(max_date) && min_date < max_date) {
-              updatedDateRange(list(
-                'min' = min_date,
-                'max' = max_date
-              ))
-              showNotification("Zoom applied successfully!", type = "message", duration = 2)
+              # Additional validation - ensure dates are reasonable
+              current_year <- as.numeric(format(Sys.Date(), "%Y"))
+              min_year <- as.numeric(format(min_date, "%Y"))
+              max_year <- as.numeric(format(max_date, "%Y"))
+              
+              # Check if dates are within reasonable range (not too far in past/future)
+              if (min_year >= 1900 && min_year <= current_year + 10 &&
+                  max_year >= 1900 && max_year <= current_year + 10) {
+                
+                # Instead of updating reactive value, store the zoom request
+                # This will be handled by the return value
+                updatedDateRange(list(
+                  'min' = min_date,
+                  'max' = max_date
+                ))
+                showNotification("Zoom range selected. Applying zoom...", type = "message", duration = 2)
+              } else {
+                showNotification("Date range is outside valid range. Please select dates within a reasonable timeframe.", type = "warning", duration = 4)
+              }
             } else {
               showNotification("Invalid date range selected.", type = "warning", duration = 3)
             }
           }, error = function(e) {
-            showNotification("Error applying zoom. Please try again.", type = "error", duration = 3)
+            showNotification("Error selecting zoom range. Please try again.", type = "error", duration = 3)
           })
           
           # Reset zoom mode

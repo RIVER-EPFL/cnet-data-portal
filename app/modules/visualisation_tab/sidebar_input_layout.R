@@ -152,10 +152,10 @@ sidebarInputLayout <- function(input, output, session,
       }
       
       # Ensure that dates are within range
-      if (newMin < date(minDate)) newMin <- minDate
-      if (newMax < date(minDate)) newMax <- minDate
-      if (newMin > date(maxDate)) newMin <- maxDate
-      if (newMax > date(maxDate)) newMax <- maxDate
+      if (newMin < as.Date(minDate)) newMin <- as.Date(minDate)
+      if (newMax < as.Date(minDate)) newMax <- as.Date(minDate)
+      if (newMin > as.Date(maxDate)) newMin <- as.Date(maxDate)
+      if (newMax > as.Date(maxDate)) newMax <- as.Date(maxDate)
       
       # Ensure min is not greater than max
       if (newMin >= newMax) {
@@ -163,18 +163,28 @@ sidebarInputLayout <- function(input, output, session,
       }
       
       # Update the dateRangeInput accordingly
-      updateDateRangeInput(session, 'time', start = newMin, end = newMax)
-      # Set the zoomed value to TRUE
-      zoomed(TRUE)
+      tryCatch({
+        updateDateRangeInput(session, 'time', start = newMin, end = newMax)
+        # Set the zoomed value to TRUE
+        zoomed(TRUE)
+      }, error = function(e) {
+        # If update fails, don't crash the app
+        warning("Failed to update date range input: ", e$message)
+      })
     })
   
     # Add an observeEvent that react to the first innerModule unit dateRange reset trigger
     observeEvent(dateRangeActions$reset(), {
       if (zoomed()) {
         # Reset the dateRange to initial dates only if plots are zoomed
-        updateDateRangeInput(session, 'time', start = minDate, end = maxDate)
-        # Set the zoomed value to FALSE
-        zoomed(FALSE)
+        tryCatch({
+          updateDateRangeInput(session, 'time', start = minDate, end = maxDate)
+          # Set the zoomed value to FALSE
+          zoomed(FALSE)
+        }, error = function(e) {
+          # If update fails, don't crash the app
+          warning("Failed to update date range input: ", e$message)
+        })
       }
     })
   }
@@ -270,10 +280,10 @@ sidebarInputLayout <- function(input, output, session,
         }
         
         # Ensure that dates are within range
-        if (newMin < date(minDate)) newMin <- minDate
-        if (newMax < date(minDate)) newMax <- minDate
-        if (newMin > date(maxDate)) newMin <- maxDate
-        if (newMax > date(maxDate)) newMax <- maxDate
+        if (newMin < as.Date(minDate)) newMin <- as.Date(minDate)
+        if (newMax < as.Date(minDate)) newMax <- as.Date(minDate)
+        if (newMin > as.Date(maxDate)) newMin <- as.Date(maxDate)
+        if (newMax > as.Date(maxDate)) newMax <- as.Date(maxDate)
         
         # Ensure min is not greater than max
         if (newMin >= newMax) {
@@ -281,18 +291,28 @@ sidebarInputLayout <- function(input, output, session,
         }
         
         # Update the dateRangeInput accordingly
-        updateDateRangeInput(session, 'time', start = newMin, end = newMax)
-        # Set the zoomed value to TRUE
-        zoomed(TRUE)
+        tryCatch({
+          updateDateRangeInput(session, 'time', start = newMin, end = newMax)
+          # Set the zoomed value to TRUE
+          zoomed(TRUE)
+        }, error = function(e) {
+          # If update fails, don't crash the app
+          warning("Failed to update date range input: ", e$message)
+        })
       })
       
       # Add an observeEvent that react to the new module unit dateRange reset trigger
       observeEvent(dateRangeActions$reset(), {
         if (zoomed()) {
           # Reset the dateRange to initial dates only if plots are zoomed
-          updateDateRangeInput(session, 'time', start = minDate, end = maxDate)
-          # Set the zoomed value to FALSE
-          zoomed(FALSE)
+          tryCatch({
+            updateDateRangeInput(session, 'time', start = minDate, end = maxDate)
+            # Set the zoomed value to FALSE
+            zoomed(FALSE)
+          }, error = function(e) {
+            # If update fails, don't crash the app
+            warning("Failed to update date range input: ", e$message)
+          })
         }
       })
     }
