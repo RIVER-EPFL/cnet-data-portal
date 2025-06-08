@@ -95,14 +95,13 @@ highFreqTimeSeriesUI <- function(id, pool) {
         ns('highfreq'),
         # Make data points hoverable
         hover = hoverOpts(ns('highfreq_hover')),
-        # Make plot brushable in the x direction with a debouncing delay type
-        # Reset it when the plot is refreshed
-        brush = brushOpts(
-          ns('highfreq_brush'),
-          direction = 'x',
-          delayType = 'debounce',
-          resetOnNew = TRUE
-        ),
+        # BRUSH DISABLED: Causes connection crashes - use date range selector for zooming
+        # brush = brushOpts(
+        #   ns('highfreq_brush'),
+        #   direction = 'x',
+        #   delayType = 'debounce',
+        #   resetOnNew = TRUE
+        # ),
         # Make plot double clickable
         dblclick = dblclickOpts(ns('highfreq_dblclick'))
       )
@@ -428,35 +427,14 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
   # Create a reactive value to store the updated date range
   updatedDateRange <- reactiveVal(NULL)
   
-  # Simple brush handling with minimal processing
-  observeEvent(input$highfreq_brush, {
-    brush <- input$highfreq_brush
-    
-    # Only process if brush has valid coordinates
-    if (!is.null(brush) && 
-        !is.null(brush$xmin) && 
-        !is.null(brush$xmax) &&
-        is.numeric(brush$xmin) &&
-        is.numeric(brush$xmax) &&
-        brush$xmin < brush$xmax) {
-      
-      # Convert coordinates to dates safely
-      tryCatch({
-        min_date <- as.Date(as.POSIXct(brush$xmin, origin = "1970-01-01", tz = "GMT"))
-        max_date <- as.Date(as.POSIXct(brush$xmax, origin = "1970-01-01", tz = "GMT"))
-        
-        # Only update if dates are valid
-        if (!is.na(min_date) && !is.na(max_date) && min_date < max_date) {
-          updatedDateRange(list(
-            'min' = min_date,
-            'max' = max_date
-          ))
-        }
-      }, error = function(e) {
-        # Silently ignore errors
-      })
-    }
-  }, ignoreInit = TRUE, ignoreNULL = TRUE)
+  # BRUSH FUNCTIONALITY DISABLED TO PREVENT CONNECTION CRASHES
+  # The brush UI is kept for visual feedback but doesn't trigger server updates
+  # Users can still zoom using the date range selector which works correctly
+  
+  # Simple observeEvent for brush that does nothing to prevent errors
+  # observeEvent(input$highfreq_brush, {
+  #   # Brush functionality disabled - use date range selector instead
+  # }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
   # Create a reactive expression that returns the updated date range
   updateDateRange <- reactive({
