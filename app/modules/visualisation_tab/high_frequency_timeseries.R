@@ -451,9 +451,9 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
   # Instructions: Click "Start Zoom" button, then click two points on the plot to define zoom range
   
   # Create a reactive expression that returns the updated date range
+  # This reactive will be triggered whenever updatedDateRange() changes
   updateDateRange <- reactive({
-    # Return the current value of updatedDateRange reactive value
-    # This will trigger when updatedDateRange() changes
+    # Get the current value - this creates the reactive dependency
     result <- updatedDateRange()
     
     # Debug: Show when updateDateRange is triggered in browser console
@@ -462,6 +462,7 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
         paste("DEBUG: updateDateRange triggered with:", result$min, "to", result$max))
     }
     
+    # Return the result
     result
   })
   
@@ -518,6 +519,12 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
                   'min' = min_date,
                   'max' = max_date
                 ))
+                
+                # Debug: Confirm the reactive value was set
+                session$sendCustomMessage("console-log", 
+                  paste("DEBUG: updatedDateRange set to:", 
+                        if(is.null(updatedDateRange())) "NULL" else paste(updatedDateRange()$min, "to", updatedDateRange()$max)))
+                
                 showNotification("Zoom range selected. Applying zoom...", type = "message", duration = 2)
                 
                 # Debug: Send message to browser console
