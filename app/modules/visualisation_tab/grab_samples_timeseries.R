@@ -389,6 +389,9 @@ grabSamplesTimeSeries <- function(input, output, session, dateRange, pool) {
         return(NULL)
       }
       
+      # Debug: Log grab samples brush activity
+      cat("DEBUG: Grab samples brush triggered with:", min_date, "to", max_date, "\n")
+      
       list(
         'min' = min_date,
         'max' = max_date

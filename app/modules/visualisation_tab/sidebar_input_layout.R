@@ -132,6 +132,12 @@ sidebarInputLayout <- function(input, output, session,
     dateRangeActions <- callModule(innerModule, '1', df, dateRange, ...)
   }
   
+  # Debug: Check if dateRangeActions is properly created
+  session$sendCustomMessage("console-log", 
+    paste("DEBUG: dateRangeActions created:", !is.null(dateRangeActions), 
+          "- has update:", !is.null(dateRangeActions$update),
+          "- has reset:", !is.null(dateRangeActions$reset)))
+  
   # If the inner module plots are modifying the date range
   if (plotDateRangeSelection) {
     # Add an observeEvent that track the plot brushing dateRange input for the first innerModule unit
