@@ -123,103 +123,14 @@ sidebarInputLayout <- function(input, output, session,
   
   ## First unit module calling ####################################################
 
-  # Call the first unit of the innerModule and retrieve, if any, the named list containing:
-  #  - update: Reactive expression containing the updated dateRange
-  #  - reset: Reactive value, updated each time the plot is double clicked, used as dateRange reset trigger
-  if (is.null(df)) {
-    dateRangeActions <- callModule(innerModule, '1', dateRange, ...)
-  } else {
-    dateRangeActions <- callModule(innerModule, '1', df, dateRange, ...)
-  }
-  
-  # Debug: Check if dateRangeActions is properly created
-  session$sendCustomMessage("console-log", 
-    paste("DEBUG: dateRangeActions created:", !is.null(dateRangeActions), 
-          "- has update:", !is.null(dateRangeActions$update),
-          "- has reset:", !is.null(dateRangeActions$reset)))
-  
-  # If the inner module plots are modifying the date range
+  # Call the inner module
   if (plotDateRangeSelection) {
-    # Add an observeEvent that track the plot brushing dateRange input for the first innerModule unit
-    observeEvent(dateRangeActions$update, ignoreInit = TRUE, {
-      # Debug: Log when this observer is triggered
-      session$sendCustomMessage("console-log", "DEBUG: sidebar observeEvent triggered for dateRangeActions$update")
-      
-      # Safely get the update values
-      updateValues <- dateRangeActions$update()
-      
-      # Debug: Log the update values
-      session$sendCustomMessage("console-log", 
-        paste("DEBUG: sidebar received update values:", 
-              if(is.null(updateValues)) "NULL" else paste(updateValues$min, "to", updateValues$max)))
-      
-      # Check if update values exist and are valid
-      if (is.null(updateValues) || 
-          is.null(updateValues$min) || 
-          is.null(updateValues$max) ||
-          length(updateValues$min) == 0 || 
-          length(updateValues$max) == 0) {
-        session$sendCustomMessage("console-log", "DEBUG: sidebar - update values are invalid, returning")
-        return()
-      }
-      
-      # Store new dates
-      newMin <- updateValues$min
-      newMax <- updateValues$max
-      
-      # Additional validation to ensure dates are valid Date objects
-      if (!inherits(newMin, "Date") || !inherits(newMax, "Date")) {
-        return()
-      }
-      
-      # Ensure that dates are within range
-      if (newMin < as.Date(minDate)) newMin <- as.Date(minDate)
-      if (newMax < as.Date(minDate)) newMax <- as.Date(minDate)
-      if (newMin > as.Date(maxDate)) newMin <- as.Date(maxDate)
-      if (newMax > as.Date(maxDate)) newMax <- as.Date(maxDate)
-      
-      # Ensure min is not greater than max
-      if (newMin >= newMax) {
-        return()
-      }
-      
-      # Update the dateRangeInput accordingly
-      tryCatch({
-        session$sendCustomMessage("console-log", 
-          paste("DEBUG: sidebar attempting to update dateRangeInput with:", newMin, "to", newMax))
-        updateDateRangeInput(session, 'time', start = newMin, end = newMax)
-        # Set the zoomed value to TRUE
-        zoomed(TRUE)
-        session$sendCustomMessage("console-log", "DEBUG: sidebar successfully updated dateRangeInput")
-      }, error = function(e) {
-        # If update fails, don't crash the app
-        session$sendCustomMessage("console-log", 
-          paste("DEBUG: sidebar failed to update dateRangeInput:", e$message))
-        warning("Failed to update date range input: ", e$message)
-      })
-    })
-  
-    # Add an observeEvent that react to the first innerModule unit dateRange reset trigger
-    observeEvent(dateRangeActions$reset(), {
-      if (zoomed()) {
-        # Reset the dateRange to initial dates only if plots are zoomed
-        tryCatch({
-          session$sendCustomMessage("console-log", 
-            paste("DEBUG: sidebar attempting to update dateRangeInput with:", minDate, "to", maxDate))
-          updateDateRangeInput(session, 'time', start = minDate, end = maxDate)
-          # Set the zoomed value to FALSE
-          zoomed(FALSE)
-          session$sendCustomMessage("console-log", "DEBUG: sidebar successfully updated dateRangeInput")
-        }, error = function(e) {
-          # If update fails, don't crash the app
-          session$sendCustomMessage("console-log", 
-            paste("DEBUG: sidebar failed to update dateRangeInput:", e$message))
-          warning("Failed to update date range input: ", e$message)
-        })
-      }
-    })
+    callModule(innerModule, '1', dateRange, ...)
+  } else {
+    callModule(innerModule, '1', df, dateRange, ...)
   }
   
+  # Note: Modules now handle date range updates directly, bypassing the return system
   
   
   ## Unit Nb tracking #############################################################
@@ -259,112 +170,10 @@ sidebarInputLayout <- function(input, output, session,
     # Call new unit module function and retrieve, if any, the named list containing:
     #  - update: Reactive expression containing the updated dateRange
     #  - reset: Reactive value, updated each time the plot is double clicked, used as dateRange reset trigger
-    ##if (is.null(df)) {
-    ##  dateRangeActions <- callModule(innerModule, unitsNb(), dateRange, ...)
-    ##} else {
-    ##  dateRangeActions <- callModule(innerModule, unitsNb(), df, dateRange, ...)
-    ##}
-
     if (is.null(df)) {
-      dateRangeActions <- callModule(
-      innerModule,
-      "1",
-      df = NULL,
-      dateRange = dateRange,
-      ...
-      )
+      callModule(innerModule, "1", dateRange, ...)
     } else {
-      dateRangeActions <- callModule(
-      innerModule,
-      "1",
-      df = df,
-      dateRange = dateRange,
-      ...
-    )
-    }
-
-    ################# here
-    
-    # If the inner module plots are modifying the date range
-    if (plotDateRangeSelection) {
-      # Add an observeEvent that track the plot brushing dateRange input for the new module unit
-      observeEvent(dateRangeActions$update, ignoreInit = TRUE, {
-        # Debug: Log when this observer is triggered
-        session$sendCustomMessage("console-log", "DEBUG: sidebar observeEvent triggered for dateRangeActions$update()")
-        
-        # Safely get the update values
-        updateValues <- dateRangeActions$update()
-        
-        # Debug: Log the update values
-        session$sendCustomMessage("console-log", 
-          paste("DEBUG: sidebar received update values:", 
-                if(is.null(updateValues)) "NULL" else paste(updateValues$min, "to", updateValues$max)))
-        
-        # Check if update values exist and are valid
-        if (is.null(updateValues) || 
-            is.null(updateValues$min) || 
-            is.null(updateValues$max) ||
-            length(updateValues$min) == 0 || 
-            length(updateValues$max) == 0) {
-          session$sendCustomMessage("console-log", "DEBUG: sidebar - update values are invalid, returning")
-          return()
-        }
-        
-        # Store new dates
-        newMin <- updateValues$min
-        newMax <- updateValues$max
-        
-        # Additional validation to ensure dates are valid Date objects
-        if (!inherits(newMin, "Date") || !inherits(newMax, "Date")) {
-          return()
-        }
-        
-        # Ensure that dates are within range
-        if (newMin < as.Date(minDate)) newMin <- as.Date(minDate)
-        if (newMax < as.Date(minDate)) newMax <- as.Date(minDate)
-        if (newMin > as.Date(maxDate)) newMin <- as.Date(maxDate)
-        if (newMax > as.Date(maxDate)) newMax <- as.Date(maxDate)
-        
-        # Ensure min is not greater than max
-        if (newMin >= newMax) {
-          return()
-        }
-        
-        # Update the dateRangeInput accordingly
-        tryCatch({
-          session$sendCustomMessage("console-log", 
-            paste("DEBUG: sidebar attempting to update dateRangeInput with:", newMin, "to", newMax))
-          updateDateRangeInput(session, 'time', start = newMin, end = newMax)
-          # Set the zoomed value to TRUE
-          zoomed(TRUE)
-          session$sendCustomMessage("console-log", "DEBUG: sidebar successfully updated dateRangeInput")
-        }, error = function(e) {
-          # If update fails, don't crash the app
-          session$sendCustomMessage("console-log", 
-            paste("DEBUG: sidebar failed to update dateRangeInput:", e$message))
-          warning("Failed to update date range input: ", e$message)
-        })
-      })
-      
-      # Add an observeEvent that react to the new module unit dateRange reset trigger
-      observeEvent(dateRangeActions$reset(), {
-        if (zoomed()) {
-          # Reset the dateRange to initial dates only if plots are zoomed
-          tryCatch({
-            session$sendCustomMessage("console-log", 
-              paste("DEBUG: sidebar attempting to update dateRangeInput with:", minDate, "to", maxDate))
-            updateDateRangeInput(session, 'time', start = minDate, end = maxDate)
-            # Set the zoomed value to FALSE
-            zoomed(FALSE)
-            session$sendCustomMessage("console-log", "DEBUG: sidebar successfully updated dateRangeInput")
-          }, error = function(e) {
-            # If update fails, don't crash the app
-            session$sendCustomMessage("console-log", 
-              paste("DEBUG: sidebar failed to update dateRangeInput:", e$message))
-            warning("Failed to update date range input: ", e$message)
-          })
-        }
-      })
+      callModule(innerModule, "1", df, dateRange, ...)
     }
   })
   

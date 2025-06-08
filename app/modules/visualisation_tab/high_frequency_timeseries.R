@@ -84,12 +84,11 @@ highFreqTimeSeriesUI <- function(id, pool) {
       ),
       # Show stats button
       actionButton(ns('showStats'), 'Show Stats', class = 'custom-style'),
-      # Click-to-zoom button
+      # Instructions for zooming
       div(
-        style = "margin-top: 10px;",
-        actionButton(ns('startZoom'), 'Start Zoom', class = 'btn-primary'),
-        br(),
-        tags$small("1. Click 'Start Zoom' 2. Click 2 points on plot", style = "color: #666; font-size: 11px;")
+        class = 'zoom-instructions',
+        style = 'margin-top: 10px; padding: 8px; background-color: #f8f9fa; border-radius: 4px; font-size: 12px;',
+        HTML('<strong>Zoom:</strong> Drag to select range on plot<br><strong>Reset:</strong> Double-click plot')
       )
     ),
     # Create the UI plots
@@ -108,16 +107,14 @@ highFreqTimeSeriesUI <- function(id, pool) {
         ns('highfreq'),
         # Make data points hoverable
         hover = hoverOpts(ns('highfreq_hover')),
-        # BRUSH DISABLED: Causes connection crashes - use click-to-zoom instead
-        # brush = brushOpts(
-        #   ns('highfreq_brush'),
-        #   direction = 'x',
-        #   delayType = 'debounce',
-        #   resetOnNew = TRUE
-        # ),
-        # Click-to-zoom: Click two points to define zoom range
-        click = clickOpts(ns('highfreq_click')),
-        # Make plot double clickable
+        # Re-enable brush functionality with proper error handling
+        brush = brushOpts(
+          ns('highfreq_brush'),
+          direction = 'x',
+          delayType = 'debounce',
+          resetOnNew = TRUE
+        ),
+        # Make plot double clickable for reset
         dblclick = dblclickOpts(ns('highfreq_dblclick'))
       )
     )
@@ -437,139 +434,80 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
   
   
   
-  ## Update dateRange with plot clicking and double click logic ####################################
+  ## Update dateRange with plot brushing and double click logic ####################################
   
-  # Create a reactive value to store the updated date range
-  updatedDateRange <- reactiveVal(NULL)
+  # Direct brush handling - bypass module return system
+  # Update the date range input directly in the sidebarInputLayout module
   
-  # Create reactive values to store click-to-zoom state
-  firstClick <- reactiveVal(NULL)
-  zoomMode <- reactiveVal(FALSE)
-  
-  # BRUSH FUNCTIONALITY DISABLED TO PREVENT CONNECTION CRASHES
-  # Alternative: Click-to-zoom functionality
-  # Instructions: Click "Start Zoom" button, then click two points on the plot to define zoom range
-  
-  # Create a reactive expression that returns the updated date range
-  # This reactive will be triggered whenever updatedDateRange() changes
-  updateDateRange <- reactive({
-    # Get the current value - this creates the reactive dependency
-    result <- updatedDateRange()
+  # Observe brush events and directly update the date range input
+  observeEvent(input$highfreq_brush, {
+    brush <- input$highfreq_brush
     
-    # Debug: Show when updateDateRange is triggered in browser console
-    if (!is.null(result)) {
-      session$sendCustomMessage("console-log", 
-        paste("DEBUG: updateDateRange triggered with:", result$min, "to", result$max))
-    } else {
-      session$sendCustomMessage("console-log", "DEBUG: updateDateRange triggered with NULL")
+    # Validate brush coordinates
+    if (is.null(brush) || 
+        is.null(brush$xmin) || 
+        is.null(brush$xmax) ||
+        !is.numeric(brush$xmin) ||
+        !is.numeric(brush$xmax) ||
+        brush$xmin >= brush$xmax) {
+      return()
     }
     
-    # Return the result
-    result
-  })
-  
-  # Force the reactive to trigger by observing it
-  observe({
-    # This will force updateDateRange to be evaluated whenever updatedDateRange changes
-    temp <- updateDateRange()
-    session$sendCustomMessage("console-log", 
-      paste("DEBUG: observe triggered, updateDateRange result:", 
-            if(is.null(temp)) "NULL" else paste(temp$min, "to", temp$max)))
-  })
-  
-  # Create a reactive value that update each time the plot is double clicked
-  # Used as trigger to reset the date range in the outer module
-  # Initialised to NULL to avoid a dateRange reset when a new unit is created
-  resetDateRange <- reactiveVal(NULL)
-  
-  # Create an observe event that react on plot double click to reset the date range
-  observeEvent(input$highfreq_dblclick, {
-    if (is.null(resetDateRange())) {
-      resetDateRange(1)
-    } else {
-      resetDateRange(resetDateRange() + 1)
-    }
-  })
-  
-  # Create an observe event that react on plot click to update the date range
-  observeEvent(input$highfreq_click, {
-    # Only process clicks if we have valid coordinates
-    if (!is.null(input$highfreq_click) && !is.null(input$highfreq_click$x)) {
-      click_x <- input$highfreq_click$x
+    # Convert brush coordinates to dates with error handling
+    tryCatch({
+      min_date <- as.Date(as.POSIXct(brush$xmin, origin = "1970-01-01", tz = "GMT"))
+      max_date <- as.Date(as.POSIXct(brush$xmax, origin = "1970-01-01", tz = "GMT"))
       
-      # Check if zoom mode is active
-      if (zoomMode()) {
-        # If first click is not set, store it
-        if (is.null(firstClick())) {
-          firstClick(click_x)
-          showNotification("First point selected. Click second point to zoom.", type = "message", duration = 3)
-        } else {
-          # Second click - create zoom range
-          tryCatch({
-            # Convert coordinates to dates
-            min_x <- min(firstClick(), click_x)
-            max_x <- max(firstClick(), click_x)
-            
-            min_date <- as.Date(as.POSIXct(min_x, origin = "1970-01-01", tz = "GMT"))
-            max_date <- as.Date(as.POSIXct(max_x, origin = "1970-01-01", tz = "GMT"))
-            
-            # Validate dates
-            if (!is.na(min_date) && !is.na(max_date) && min_date < max_date) {
-              # Additional validation - ensure dates are reasonable
-              current_year <- as.numeric(format(Sys.Date(), "%Y"))
-              min_year <- as.numeric(format(min_date, "%Y"))
-              max_year <- as.numeric(format(max_date, "%Y"))
-              
-              # Check if dates are within reasonable range (not too far in past/future)
-              if (min_year >= 1900 && min_year <= current_year + 10 &&
-                  max_year >= 1900 && max_year <= current_year + 10) {
-                
-                # Instead of updating reactive value, store the zoom request
-                # This will be handled by the return value
-                updatedDateRange(list(
-                  'min' = min_date,
-                  'max' = max_date
-                ))
-                
-                # Debug: Confirm the reactive value was set
-                session$sendCustomMessage("console-log", 
-                  paste("DEBUG: updatedDateRange set to:", 
-                        if(is.null(updatedDateRange())) "NULL" else paste(updatedDateRange()$min, "to", updatedDateRange()$max)))
-                
-                showNotification("Zoom range selected. Applying zoom...", type = "message", duration = 2)
-                
-                # Debug: Send message to browser console
-                session$sendCustomMessage("console-log", 
-                  paste("DEBUG: Click-to-zoom setting date range:", min_date, "to", max_date))
-              } else {
-                showNotification("Date range is outside valid range. Please select dates within a reasonable timeframe.", type = "warning", duration = 4)
-              }
-            } else {
-              showNotification("Invalid date range selected.", type = "warning", duration = 3)
-            }
-          }, error = function(e) {
-            showNotification("Error selecting zoom range. Please try again.", type = "error", duration = 3)
-          })
-          
-          # Reset zoom mode
-          firstClick(NULL)
-          zoomMode(FALSE)
-        }
+      # Validate converted dates
+      if (is.na(min_date) || is.na(max_date) || min_date >= max_date) {
+        return()
       }
-    }
+      
+      # Additional validation for reasonable date range
+      current_year <- as.numeric(format(Sys.Date(), "%Y"))
+      if (as.numeric(format(min_date, "%Y")) < 1900 || 
+          as.numeric(format(max_date, "%Y")) > (current_year + 10)) {
+        showNotification("Date range is outside valid range. Please select dates within a reasonable timeframe.", 
+                         type = "warning", duration = 4)
+        return()
+      }
+      
+      # Debug message
+      session$sendCustomMessage("console-log", 
+        paste("DEBUG: High frequency brush triggered with:", min_date, "to", max_date))
+      
+      # Directly update the date range input using the correct input ID
+      tryCatch({
+        updateDateRangeInput(session, 'time', start = min_date, end = max_date)
+        showNotification("Zoom applied successfully!", type = "message", duration = 2)
+        session$sendCustomMessage("console-log", "DEBUG: High frequency date range updated successfully")
+      }, error = function(e) {
+        session$sendCustomMessage("console-log", 
+          paste("DEBUG: Failed to update date range:", e$message))
+        showNotification("Failed to apply zoom. Please try again.", type = "error", duration = 3)
+      })
+      
+    }, error = function(e) {
+      session$sendCustomMessage("console-log", 
+        paste("DEBUG: Error processing brush coordinates:", e$message))
+    })
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
-  # Create an observe event that react to the start zoom button
-  observeEvent(input$startZoom, {
-    zoomMode(TRUE)
-    firstClick(NULL)
-    showNotification("Zoom mode activated. Click two points on the plot to define zoom range.", 
-                     type = "message", duration = 4)
+  # Handle double-click to reset date range
+  observeEvent(input$highfreq_dblclick, {
+    tryCatch({
+      # Reset to original date range
+      updateDateRangeInput(session, 'time', 
+                          start = min(df$`24H`$Date, na.rm = TRUE), 
+                          end = max(df$`24H`$Date, na.rm = TRUE))
+      showNotification("Date range reset!", type = "message", duration = 2)
+      session$sendCustomMessage("console-log", "DEBUG: High frequency date range reset")
+    }, error = function(e) {
+      session$sendCustomMessage("console-log", 
+        paste("DEBUG: Failed to reset date range:", e$message))
+    })
   })
   
-  # Return the new dateRange values and date range reset trigger in order to update the outer module dateRangeInput
-  return(list(
-    'update' = updateDateRange,
-    'reset' = resetDateRange
-  ))
+  # Return NULL since we're bypassing the module return system
+  return(NULL)
 }
