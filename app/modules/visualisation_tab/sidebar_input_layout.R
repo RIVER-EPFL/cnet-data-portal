@@ -22,6 +22,12 @@ sidebarInputLayoutUI <- function(id, minDate, maxDate, innerModuleUI, ...) {
   
   # Create the module layout
   div(
+    # Add JavaScript for console logging
+    tags$script("
+      Shiny.addCustomMessageHandler('console-log', function(message) {
+        console.log(message);
+      });
+    "),
     # First div containing the global inputs
     div(
       class = 'main-inputs',
@@ -164,11 +170,16 @@ sidebarInputLayout <- function(input, output, session,
       
       # Update the dateRangeInput accordingly
       tryCatch({
+        session$sendCustomMessage("console-log", 
+          paste("DEBUG: sidebar attempting to update dateRangeInput with:", newMin, "to", newMax))
         updateDateRangeInput(session, 'time', start = newMin, end = newMax)
         # Set the zoomed value to TRUE
         zoomed(TRUE)
+        session$sendCustomMessage("console-log", "DEBUG: sidebar successfully updated dateRangeInput")
       }, error = function(e) {
         # If update fails, don't crash the app
+        session$sendCustomMessage("console-log", 
+          paste("DEBUG: sidebar failed to update dateRangeInput:", e$message))
         warning("Failed to update date range input: ", e$message)
       })
     })
@@ -178,11 +189,16 @@ sidebarInputLayout <- function(input, output, session,
       if (zoomed()) {
         # Reset the dateRange to initial dates only if plots are zoomed
         tryCatch({
+          session$sendCustomMessage("console-log", 
+            paste("DEBUG: sidebar attempting to update dateRangeInput with:", minDate, "to", maxDate))
           updateDateRangeInput(session, 'time', start = minDate, end = maxDate)
           # Set the zoomed value to FALSE
           zoomed(FALSE)
+          session$sendCustomMessage("console-log", "DEBUG: sidebar successfully updated dateRangeInput")
         }, error = function(e) {
           # If update fails, don't crash the app
+          session$sendCustomMessage("console-log", 
+            paste("DEBUG: sidebar failed to update dateRangeInput:", e$message))
           warning("Failed to update date range input: ", e$message)
         })
       }
@@ -258,8 +274,16 @@ sidebarInputLayout <- function(input, output, session,
     if (plotDateRangeSelection) {
       # Add an observeEvent that track the plot brushing dateRange input for the new module unit
       observeEvent(dateRangeActions$update(), ignoreInit = TRUE, {
+        # Debug: Log when this observer is triggered
+        session$sendCustomMessage("console-log", "DEBUG: sidebar observeEvent triggered for dateRangeActions$update()")
+        
         # Safely get the update values
         updateValues <- dateRangeActions$update()
+        
+        # Debug: Log the update values
+        session$sendCustomMessage("console-log", 
+          paste("DEBUG: sidebar received update values:", 
+                if(is.null(updateValues)) "NULL" else paste(updateValues$min, "to", updateValues$max)))
         
         # Check if update values exist and are valid
         if (is.null(updateValues) || 
@@ -267,6 +291,7 @@ sidebarInputLayout <- function(input, output, session,
             is.null(updateValues$max) ||
             length(updateValues$min) == 0 || 
             length(updateValues$max) == 0) {
+          session$sendCustomMessage("console-log", "DEBUG: sidebar - update values are invalid, returning")
           return()
         }
         
@@ -292,11 +317,16 @@ sidebarInputLayout <- function(input, output, session,
         
         # Update the dateRangeInput accordingly
         tryCatch({
+          session$sendCustomMessage("console-log", 
+            paste("DEBUG: sidebar attempting to update dateRangeInput with:", newMin, "to", newMax))
           updateDateRangeInput(session, 'time', start = newMin, end = newMax)
           # Set the zoomed value to TRUE
           zoomed(TRUE)
+          session$sendCustomMessage("console-log", "DEBUG: sidebar successfully updated dateRangeInput")
         }, error = function(e) {
           # If update fails, don't crash the app
+          session$sendCustomMessage("console-log", 
+            paste("DEBUG: sidebar failed to update dateRangeInput:", e$message))
           warning("Failed to update date range input: ", e$message)
         })
       })
@@ -306,11 +336,16 @@ sidebarInputLayout <- function(input, output, session,
         if (zoomed()) {
           # Reset the dateRange to initial dates only if plots are zoomed
           tryCatch({
+            session$sendCustomMessage("console-log", 
+              paste("DEBUG: sidebar attempting to update dateRangeInput with:", minDate, "to", maxDate))
             updateDateRangeInput(session, 'time', start = minDate, end = maxDate)
             # Set the zoomed value to FALSE
             zoomed(FALSE)
+            session$sendCustomMessage("console-log", "DEBUG: sidebar successfully updated dateRangeInput")
           }, error = function(e) {
             # If update fails, don't crash the app
+            session$sendCustomMessage("console-log", 
+              paste("DEBUG: sidebar failed to update dateRangeInput:", e$message))
             warning("Failed to update date range input: ", e$message)
           })
         }
