@@ -119,6 +119,7 @@ visualisationTab <- function(input, output, session, pool, user, hfDf) {
              ),
              minDate = hfMinMaxDates$min,
              maxDate = hfMinMaxDates$max,
+             plotDateRangeSelection = FALSE,
              df = hfDf,
              pool = pool)
 

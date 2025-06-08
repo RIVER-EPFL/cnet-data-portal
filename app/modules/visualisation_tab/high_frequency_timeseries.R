@@ -199,13 +199,20 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
         # Rename with singlePoint column
         rename(singlePoint = ends_with('singlePoint'))
     } else {
-      # Filter the data using the selected sites and the date range
-      # Then select the parameter and rename the column to 'value'
-      df %<>% filter(
-        Site_ID %in% selectedSites_d(),
-        date(Date) >= dateRange()$min,
-        date(Date) <= dateRange()$max
-      ) %>% select(Date, Site_ID, 'value' = param()$data)
+      tryCatch({
+        # Filter the data using the selected sites and the date range
+        # Then select the parameter and rename the column to 'value'
+        df %<>% filter(
+          Site_ID %in% selectedSites_d(),
+          date(Date) >= dateRange()$min,
+          date(Date) <= dateRange()$max
+        ) %>% select(Date, Site_ID, 'value' = param()$data)
+      }, error = function(e) {
+        # If filtering fails, return empty data frame with correct structure
+        df <- data.frame(Date = as.POSIXct(character(0)), 
+                        Site_ID = character(0), 
+                        value = numeric(0))
+      })
     }
     
     # If there is no data return NULL else df
@@ -220,14 +227,20 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
     # If there are no data return NULL
     if (data() %>% is.null()) return(NULL)
     
-    # Create and return a highFreqTimeSeriePlot
-    highFreqTimeSeriePlot(
-      df = data(),
-      parameter = param(),
-      plotTitle = 'Sensor High Frequency Time Serie',
-      sites = sites,
-      modeledData = 'data_type' %in% colnames(data())
-    )
+    # Create and return a highFreqTimeSeriePlot with error handling
+    tryCatch({
+      highFreqTimeSeriePlot(
+        df = data(),
+        parameter = param(),
+        plotTitle = 'Sensor High Frequency Time Serie',
+        sites = sites,
+        modeledData = 'data_type' %in% colnames(data())
+      )
+    }, error = function(e) {
+      # Return a simple error plot if rendering fails
+      plot(1, 1, type = "n", xlab = "", ylab = "", main = "Error rendering plot")
+      text(1, 1, paste("Plot error:", e$message), cex = 0.8)
+    })
   })
   
   
@@ -378,20 +391,28 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
   # Create a reactive expression that contains the new dateRange to be used globally
   # With the same format as the input dateRange
   # Should be returned by the module
-  # Converting number to date using the Linux epoch time as origin
   updateDateRange <- reactive({
-    # Return NULL if brush doesn't exist or has invalid coordinates
+    # Check if brush exists and has valid coordinates
     if (is.null(input$highfreq_brush) || 
         is.null(input$highfreq_brush$xmin) || 
         is.null(input$highfreq_brush$xmax)) {
       return(NULL)
     }
     
-    # Simple conversion like grab samples
-    list(
-      'min' = as.Date(as.POSIXct(input$highfreq_brush$xmin, origin = "1970-01-01", tz = "GMT")),
-      'max' = as.Date(as.POSIXct(input$highfreq_brush$xmax, origin = "1970-01-01", tz = "GMT"))
-    )
+    # Convert with error handling
+    tryCatch({
+      min_date <- as.Date(as.POSIXct(input$highfreq_brush$xmin, origin = "1970-01-01", tz = "GMT"))
+      max_date <- as.Date(as.POSIXct(input$highfreq_brush$xmax, origin = "1970-01-01", tz = "GMT"))
+      
+      # Validate dates
+      if (is.na(min_date) || is.na(max_date) || min_date >= max_date) {
+        return(NULL)
+      }
+      
+      list('min' = min_date, 'max' = max_date)
+    }, error = function(e) {
+      return(NULL)
+    })
   })
   
   # Create a reactive value that update each time the plot is double clicked
