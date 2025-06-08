@@ -410,9 +410,9 @@ grabSamplesTimeSeries <- function(input, output, session, dateRange, pool) {
       session$sendCustomMessage("console-log", 
         paste("DEBUG: Grab samples brush triggered with:", min_date, "to", max_date))
       
-      # Directly update the date range input using the correct input ID
+      # Directly update the date range input using the parent session
       tryCatch({
-        updateDateRangeInput(session, 'time', start = min_date, end = max_date)
+        updateDateRangeInput(session$parent, 'time', start = min_date, end = max_date)
         showNotification("Zoom applied successfully!", type = "message", duration = 2)
         session$sendCustomMessage("console-log", "DEBUG: Grab samples date range updated successfully")
       }, error = function(e) {
@@ -431,7 +431,7 @@ grabSamplesTimeSeries <- function(input, output, session, dateRange, pool) {
   observeEvent(input$lowfreq_dblclick, {
     tryCatch({
       # Reset to original date range
-      updateDateRangeInput(session, 'time', 
+      updateDateRangeInput(session$parent, 'time', 
                           start = min(df$Date, na.rm = TRUE), 
                           end = max(df$Date, na.rm = TRUE))
       showNotification("Date range reset!", type = "message", duration = 2)
