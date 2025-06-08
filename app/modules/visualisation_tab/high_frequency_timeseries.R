@@ -95,14 +95,13 @@ highFreqTimeSeriesUI <- function(id, pool) {
         ns('highfreq'),
         # Make data points hoverable
         hover = hoverOpts(ns('highfreq_hover')),
-        # Make plot brushable in the x direction with a debouncing delay type
-        # Reset it when the plot is refreshed
-        brush = brushOpts(
-          ns('highfreq_brush'),
-          direction = 'x',
-          delayType = 'debounce',
-          resetOnNew = TRUE
-        ),
+        # Temporarily disabled to debug connection issues
+        # brush = brushOpts(
+        #   ns('highfreq_brush'),
+        #   direction = 'x',
+        #   delayType = 'debounce',
+        #   resetOnNew = TRUE
+        # ),
         # Make plot double clickable
         dblclick = dblclickOpts(ns('highfreq_dblclick'))
       )
@@ -126,6 +125,18 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
 #  - pool: The pool connection to the database
 # 
 # Returns a reactive expression containing the updated date range with the same format as the input
+  
+  ## Session validation and setup #################################################
+  
+  # Check if session is valid to prevent readyState errors
+  if (is.null(session) || session$closed) {
+    return(NULL)
+  }
+  
+  # Add session onSessionEnded handler to clean up
+  session$onSessionEnded(function() {
+    # Clean up any reactive values or observers if needed
+  })
   
   ## Stations update logic ########################################################
   
@@ -254,8 +265,7 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
       warning("Error in data processing: ", e$message)
       return(NULL)
     })
-  })
-  
+  }) %>% debounce(300) # Add debouncing to prevent excessive updates
   
   ## Plots output logic ###########################################################
   
@@ -282,10 +292,7 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
       plot(1, 1, type = "n", xlab = "", ylab = "", main = "Error rendering plot")
       text(1, 1, paste("Plot error:", e$message), cex = 0.8)
     })
-  })
-  
-  
-  
+  }) %>% bindEvent(data(), ignoreNULL = TRUE, ignoreInit = FALSE) # Use bindEvent for more stable rendering
   
   ## Plot hovering logic ##########################################################
   
@@ -432,42 +439,64 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
   # Create a reactive value to store the updated date range
   updatedDateRange <- reactiveVal(NULL)
   
-  # Observe brush changes and update the date range
-  observeEvent(input$highfreq_brush, {
-    brush <- input$highfreq_brush
-    
-    # Check if brush exists and has valid coordinates
-    if (is.null(brush) || 
-        is.null(brush$xmin) || 
-        is.null(brush$xmax) ||
-        !is.numeric(brush$xmin) ||
-        !is.numeric(brush$xmax) ||
-        is.na(brush$xmin) ||
-        is.na(brush$xmax) ||
-        brush$xmin >= brush$xmax) {
-      return()
-    }
-    
-    # Try to convert coordinates to dates with error handling
-    tryCatch({
-      min_date <- as.Date(as.POSIXct(brush$xmin, origin = "1970-01-01", tz = "GMT"))
-      max_date <- as.Date(as.POSIXct(brush$xmax, origin = "1970-01-01", tz = "GMT"))
-      
-      # Validate that the converted dates are reasonable
-      if (is.na(min_date) || is.na(max_date) || min_date >= max_date) {
-        return()
-      }
-      
-      # Update the reactive value
-      updatedDateRange(list(
-        'min' = min_date,
-        'max' = max_date
-      ))
-    }, error = function(e) {
-      # Do nothing on error
-      return()
-    })
-  })
+  # Temporarily disabled brush functionality to debug connection issues
+  # # Debounce brush events to prevent overwhelming the reactive system
+  # brushDebounced <- reactive({
+  #   input$highfreq_brush
+  # }) %>% debounce(800) # 800ms debounce for more stability
+  # 
+  # # Observe debounced brush changes and update the date range
+  # observeEvent(brushDebounced(), {
+  #   # Check if session is still valid
+  #   if (is.null(session) || session$closed) {
+  #     return()
+  #   }
+  #   
+  #   brush <- brushDebounced()
+  #   
+  #   # Check if brush exists and has valid coordinates
+  #   if (is.null(brush) || 
+  #       is.null(brush$xmin) || 
+  #       is.null(brush$xmax) ||
+  #       !is.numeric(brush$xmin) ||
+  #       !is.numeric(brush$xmax) ||
+  #       is.na(brush$xmin) ||
+  #       is.na(brush$xmax) ||
+  #       brush$xmin >= brush$xmax ||
+  #       abs(brush$xmax - brush$xmin) < 86400) { # Prevent selections smaller than 1 day (in seconds)
+  #     return()
+  #   }
+  #   
+  #   # Try to convert coordinates to dates with error handling
+  #   tryCatch({
+  #     min_date <- as.Date(as.POSIXct(brush$xmin, origin = "1970-01-01", tz = "GMT"))
+  #     max_date <- as.Date(as.POSIXct(brush$xmax, origin = "1970-01-01", tz = "GMT"))
+  #     
+  #     # Validate that the converted dates are reasonable
+  #     if (is.na(min_date) || is.na(max_date) || min_date >= max_date) {
+  #       return()
+  #     }
+  #     
+  #     # Prevent very narrow date ranges that might cause issues (minimum 1 day)
+  #     if (as.numeric(max_date - min_date) < 1) {
+  #       return()
+  #     }
+  #     
+  #     # Update the reactive value only if it's different from current
+  #     current <- updatedDateRange()
+  #     if (is.null(current) || 
+  #         current$min != min_date || 
+  #         current$max != max_date) {
+  #       updatedDateRange(list(
+  #         'min' = min_date,
+  #         'max' = max_date
+  #       ))
+  #     }
+  #   }, error = function(e) {
+  #     # Do nothing on error
+  #     return()
+  #   })
+  # }, ignoreInit = TRUE, ignoreNULL = TRUE)
   
   # Create a reactive expression that returns the updated date range
   updateDateRange <- reactive({
