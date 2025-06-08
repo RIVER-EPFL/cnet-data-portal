@@ -130,16 +130,21 @@ sidebarInputLayout <- function(input, output, session,
   if (plotDateRangeSelection) {
     # Add an observeEvent that track the plot brushing dateRange input for the first innerModule unit
     observeEvent(dateRangeActions$update(), ignoreInit = TRUE, {
-      # Run only if dates are non null and valid
-      req(dateRangeActions$update())
-      req(!is.null(dateRangeActions$update()$min))
-      req(!is.null(dateRangeActions$update()$max))
-      req(length(dateRangeActions$update()$min) != 0)
-      req(length(dateRangeActions$update()$max) != 0)
+      # Safely get the update values
+      updateValues <- dateRangeActions$update()
+      
+      # Check if update values exist and are valid
+      if (is.null(updateValues) || 
+          is.null(updateValues$min) || 
+          is.null(updateValues$max) ||
+          length(updateValues$min) == 0 || 
+          length(updateValues$max) == 0) {
+        return()
+      }
       
       # Store new dates
-      newMin <- dateRangeActions$update()$min
-      newMax <- dateRangeActions$update()$max
+      newMin <- updateValues$min
+      newMax <- updateValues$max
       
       # Additional validation to ensure dates are valid Date objects
       if (!inherits(newMin, "Date") || !inherits(newMax, "Date")) {
@@ -243,16 +248,21 @@ sidebarInputLayout <- function(input, output, session,
     if (plotDateRangeSelection) {
       # Add an observeEvent that track the plot brushing dateRange input for the new module unit
       observeEvent(dateRangeActions$update(), ignoreInit = TRUE, {
-        # Run only if dates are non null and valid
-        req(dateRangeActions$update())
-        req(!is.null(dateRangeActions$update()$min))
-        req(!is.null(dateRangeActions$update()$max))
-        req(length(dateRangeActions$update()$min) != 0)
-        req(length(dateRangeActions$update()$max) != 0)
+        # Safely get the update values
+        updateValues <- dateRangeActions$update()
+        
+        # Check if update values exist and are valid
+        if (is.null(updateValues) || 
+            is.null(updateValues$min) || 
+            is.null(updateValues$max) ||
+            length(updateValues$min) == 0 || 
+            length(updateValues$max) == 0) {
+          return()
+        }
         
         # Store new dates
-        newMin <- dateRangeActions$update()$min
-        newMax <- dateRangeActions$update()$max
+        newMin <- updateValues$min
+        newMax <- updateValues$max
         
         # Additional validation to ensure dates are valid Date objects
         if (!inherits(newMin, "Date") || !inherits(newMax, "Date")) {

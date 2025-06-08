@@ -170,63 +170,90 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
   # Create a data reactive expression that return a subset of the data
   # Using the dateRange, selectedSites_d and param reactive expressions
   data <- reactive({
-    # Validate inputs before processing
-    req(dateRange())
-    req(selectedSites_d())
-    req(param())
-    
-    # Additional validation for date range
-    if (is.null(dateRange()$min) || is.null(dateRange()$max) ||
-        !inherits(dateRange()$min, "Date") || !inherits(dateRange()$max, "Date") ||
-        dateRange()$min >= dateRange()$max) {
-      return(NULL)
-    }
-    
-    # Select df
-    df <- df[[input$dataFreq]]
-    
-    # Validate that df exists and has data
-    if (is.null(df) || nrow(df) == 0) {
-      return(NULL)
-    }
-    
-    # If the raw data is selected filter also for modeled data
-    if (input$dataFreq == '10min') {
-      # Define data types to remove depending on the state of showModeledData
-      # If nothing to remove, set to 'NULL' as string to avoid match error
-      typesToRemove <- c('modeled')
-      if (input$showModeledData) typesToRemove <- 'NULL'
+    # Wrap entire data processing in tryCatch to prevent crashes
+    tryCatch({
+      # Validate inputs before processing
+      req(dateRange())
+      req(selectedSites_d())
+      req(param())
       
-      # Filter the data using the selected sites and the date range
-      df %<>% filter(
-        Site_ID %in% selectedSites_d(),
-        date(Date) >= dateRange()$min,
-        date(Date) <= dateRange()$max
-      ) %>%
-        # Select the date, Site_ID, all the parameter specific columns and remove modeled column not used
-        select(Date, Site_ID, starts_with(param()$data), -ends_with(typesToRemove)) %>% 
-        # Pivot longer the data to get a data_type and a value column
-        pivot_longer(
-          ends_with(c('measured', 'modeled')),
-          names_to = 'data_type',
-          names_pattern = '.*_(.*)',
-          names_transform = list('data_type' = as.factor),
-          values_to = 'value'
-        ) %>% 
-        # Rename with singlePoint column
-        rename(singlePoint = ends_with('singlePoint'))
-    } else {
-      # Filter the data using the selected sites and the date range
-      # Then select the parameter and rename the column to 'value'
-      df %<>% filter(
-        Site_ID %in% selectedSites_d(),
-        date(Date) >= dateRange()$min,
-        date(Date) <= dateRange()$max
-      ) %>% select(Date, Site_ID, 'value' = param()$data)
-    }
-    
-    # If there is no data return NULL else df
-    if (nrow(df) == 0) NULL else df
+      # Additional validation for date range
+      if (is.null(dateRange()$min) || is.null(dateRange()$max) ||
+          !inherits(dateRange()$min, "Date") || !inherits(dateRange()$max, "Date") ||
+          dateRange()$min >= dateRange()$max) {
+        return(NULL)
+      }
+      
+      # Select df
+      df <- df[[input$dataFreq]]
+      
+      # Validate that df exists and has data
+      if (is.null(df) || nrow(df) == 0) {
+        return(NULL)
+      }
+      
+      # If the raw data is selected filter also for modeled data
+      if (input$dataFreq == '10min') {
+        # Define data types to remove depending on the state of showModeledData
+        # If nothing to remove, set to 'NULL' as string to avoid match error
+        typesToRemove <- c('modeled')
+        if (input$showModeledData) typesToRemove <- 'NULL'
+        
+        # Filter the data using the selected sites and the date range
+        df %<>% filter(
+          Site_ID %in% selectedSites_d(),
+          date(Date) >= dateRange()$min,
+          date(Date) <= dateRange()$max
+        )
+        
+        # Check if filtering resulted in empty data
+        if (nrow(df) == 0) return(NULL)
+        
+        # Continue with data transformation
+        df %<>%
+          # Select the date, Site_ID, all the parameter specific columns and remove modeled column not used
+          select(Date, Site_ID, starts_with(param()$data), -ends_with(typesToRemove)) %>% 
+          # Pivot longer the data to get a data_type and a value column
+          pivot_longer(
+            ends_with(c('measured', 'modeled')),
+            names_to = 'data_type',
+            names_pattern = '.*_(.*)',
+            names_transform = list('data_type' = as.factor),
+            values_to = 'value'
+          ) %>% 
+          # Rename with singlePoint column
+          rename(singlePoint = ends_with('singlePoint'))
+      } else {
+        # Filter the data using the selected sites and the date range
+        # Then select the parameter and rename the column to 'value'
+        df %<>% filter(
+          Site_ID %in% selectedSites_d(),
+          date(Date) >= dateRange()$min,
+          date(Date) <= dateRange()$max
+        )
+        
+        # Check if filtering resulted in empty data
+        if (nrow(df) == 0) return(NULL)
+        
+        # Check if the parameter column exists
+        if (!param()$data %in% colnames(df)) {
+          return(NULL)
+        }
+        
+        # Select and rename columns
+        df %<>% select(Date, Site_ID, 'value' = param()$data)
+      }
+      
+      # Final validation of the processed data
+      if (is.null(df) || nrow(df) == 0) return(NULL)
+      
+      return(df)
+      
+    }, error = function(e) {
+      # Log error for debugging but don't crash
+      warning("Error in data processing: ", e$message)
+      return(NULL)
+    })
   })
   
   
@@ -402,39 +429,49 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
   
   ## Update dateRange with plot brushing and double click logic ####################################
   
-  # Create a reactive expression that contains the new dateRange to be used globally
-  # With the same format as the input dateRange
-  # Should be returned by the module
-  # Converting number to date using the Linux epoch time as origin
-  updateDateRange <- reactive({
+  # Create a reactive value to store the updated date range
+  updatedDateRange <- reactiveVal(NULL)
+  
+  # Observe brush changes and update the date range
+  observeEvent(input$highfreq_brush, {
+    brush <- input$highfreq_brush
+    
     # Check if brush exists and has valid coordinates
-    if (is.null(input$highfreq_brush) || 
-        is.null(input$highfreq_brush$xmin) || 
-        is.null(input$highfreq_brush$xmax) ||
-        !is.numeric(input$highfreq_brush$xmin) ||
-        !is.numeric(input$highfreq_brush$xmax) ||
-        input$highfreq_brush$xmin >= input$highfreq_brush$xmax) {
-      return(NULL)
+    if (is.null(brush) || 
+        is.null(brush$xmin) || 
+        is.null(brush$xmax) ||
+        !is.numeric(brush$xmin) ||
+        !is.numeric(brush$xmax) ||
+        is.na(brush$xmin) ||
+        is.na(brush$xmax) ||
+        brush$xmin >= brush$xmax) {
+      return()
     }
     
     # Try to convert coordinates to dates with error handling
     tryCatch({
-      min_date <- as.Date(as.POSIXct(input$highfreq_brush$xmin, origin = "1970-01-01", tz = "GMT"))
-      max_date <- as.Date(as.POSIXct(input$highfreq_brush$xmax, origin = "1970-01-01", tz = "GMT"))
+      min_date <- as.Date(as.POSIXct(brush$xmin, origin = "1970-01-01", tz = "GMT"))
+      max_date <- as.Date(as.POSIXct(brush$xmax, origin = "1970-01-01", tz = "GMT"))
       
       # Validate that the converted dates are reasonable
       if (is.na(min_date) || is.na(max_date) || min_date >= max_date) {
-        return(NULL)
+        return()
       }
       
-      list(
+      # Update the reactive value
+      updatedDateRange(list(
         'min' = min_date,
         'max' = max_date
-      )
+      ))
     }, error = function(e) {
-      # Return NULL on error instead of warning to avoid console spam
-      return(NULL)
+      # Do nothing on error
+      return()
     })
+  })
+  
+  # Create a reactive expression that returns the updated date range
+  updateDateRange <- reactive({
+    updatedDateRange()
   })
   
   # Create a reactive value that update each time the plot is double clicked
