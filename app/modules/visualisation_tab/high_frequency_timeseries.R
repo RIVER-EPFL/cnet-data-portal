@@ -125,7 +125,7 @@ highFreqTimeSeriesUI <- function(id, pool) {
 
 ## Create the server function of the module ###############################################
 
-highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
+highFreqTimeSeries <- function(input, output, session, df, dateRange, pool, parentSession = NULL) {
 # Create the logic for the highFreqTimeSeries module
 # Parameters:
 #  - input, output, session: Default needed parameters to create a module
@@ -135,6 +135,7 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
 #               + min: Date, the lower bound to filter the date
 #               + max: Date, the upper bound to filter the data
 #  - pool: The pool connection to the database
+#  - parentSession: The parent session of the module
 # 
 # Returns a reactive expression containing the updated date range with the same format as the input
   
@@ -478,7 +479,8 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
       
       # Directly update the date range input using the parent session
       tryCatch({
-        updateDateRangeInput(session$parent, 'time', start = min_date, end = max_date)
+        targetSession <- if (!is.null(parentSession)) parentSession else session$parent
+        updateDateRangeInput(targetSession, 'time', start = min_date, end = max_date)
         showNotification("Zoom applied successfully!", type = "message", duration = 2)
         session$sendCustomMessage("console-log", "DEBUG: High frequency date range updated successfully")
       }, error = function(e) {
@@ -497,7 +499,8 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
   observeEvent(input$highfreq_dblclick, {
     tryCatch({
       # Reset to original date range
-      updateDateRangeInput(session$parent, 'time', 
+      targetSession <- if (!is.null(parentSession)) parentSession else session$parent
+      updateDateRangeInput(targetSession, 'time', 
                           start = min(df$`24H`$Date, na.rm = TRUE), 
                           end = max(df$`24H`$Date, na.rm = TRUE))
       showNotification("Date range reset!", type = "message", duration = 2)

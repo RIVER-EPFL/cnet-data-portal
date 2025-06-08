@@ -126,10 +126,10 @@ sidebarInputLayout <- function(input, output, session,
   # Call the inner module with correct parameters based on module signature
   if (plotDateRangeSelection) {
     # For modules that DON'T take df (like grabSamplesTimeSeries)
-    callModule(innerModule, '1', dateRange, ...)
+    callModule(innerModule, '1', dateRange, ..., parentSession = session)
   } else {
     # For modules that DO take df (like highFreqTimeSeries)
-    callModule(innerModule, '1', df, dateRange, ...)
+    callModule(innerModule, '1', df, dateRange, ..., parentSession = session)
   }
   
   # Note: Modules now handle date range updates directly, bypassing the return system
@@ -172,10 +172,10 @@ sidebarInputLayout <- function(input, output, session,
     # Call new unit module function with correct parameters based on module signature
     if (plotDateRangeSelection) {
       # For modules that DON'T take df (like grabSamplesTimeSeries)
-      callModule(innerModule, unitsNb(), dateRange, ...)
+      callModule(innerModule, unitsNb(), dateRange, ..., parentSession = session)
     } else {
       # For modules that DO take df (like highFreqTimeSeries)
-      callModule(innerModule, unitsNb(), df, dateRange, ...)
+      callModule(innerModule, unitsNb(), df, dateRange, ..., parentSession = session)
     }
   })
   
