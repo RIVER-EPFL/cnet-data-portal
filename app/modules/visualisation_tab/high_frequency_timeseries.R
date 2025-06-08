@@ -460,10 +460,21 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
     if (!is.null(result)) {
       session$sendCustomMessage("console-log", 
         paste("DEBUG: updateDateRange triggered with:", result$min, "to", result$max))
+    } else {
+      session$sendCustomMessage("console-log", "DEBUG: updateDateRange triggered with NULL")
     }
     
     # Return the result
     result
+  })
+  
+  # Force the reactive to trigger by observing it
+  observe({
+    # This will force updateDateRange to be evaluated whenever updatedDateRange changes
+    temp <- updateDateRange()
+    session$sendCustomMessage("console-log", 
+      paste("DEBUG: observe triggered, updateDateRange result:", 
+            if(is.null(temp)) "NULL" else paste(temp$min, "to", temp$max)))
   })
   
   # Create a reactive value that update each time the plot is double clicked
