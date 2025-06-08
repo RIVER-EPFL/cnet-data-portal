@@ -126,13 +126,40 @@ sidebarInputLayout <- function(input, output, session,
   # Call the inner module with correct parameters based on module signature
   if (plotDateRangeSelection) {
     # For modules that DON'T take df (like grabSamplesTimeSeries)
-    callModule(innerModule, '1', dateRange, ..., parentSession = session)
+    dateRangeActions <- callModule(innerModule, '1', dateRange, ...)
   } else {
     # For modules that DO take df (like highFreqTimeSeries)
-    callModule(innerModule, '1', df, dateRange, ..., parentSession = session)
+    dateRangeActions <- callModule(innerModule, '1', df, dateRange, ...)
   }
   
-  # Note: Modules now handle date range updates directly, bypassing the return system
+  # Handle date range updates from modules
+  observeEvent(dateRangeActions$update(), ignoreInit = TRUE, ignoreNULL = TRUE, {
+    # Get the new date range
+    newDateRange <- dateRangeActions$update()
+    
+    # Validate the new date range
+    if (!is.null(newDateRange) && 
+        !is.null(newDateRange$min) && 
+        !is.null(newDateRange$max) &&
+        inherits(newDateRange$min, "Date") &&
+        inherits(newDateRange$max, "Date") &&
+        newDateRange$min < newDateRange$max) {
+      
+      # Update the date range input
+      updateDateRangeInput(session, 'time', 
+                          start = newDateRange$min, 
+                          end = newDateRange$max)
+    }
+  })
+  
+  # Handle date range reset from modules  
+  observeEvent(dateRangeActions$reset(), ignoreInit = TRUE, ignoreNULL = TRUE, {
+    # Reset to original date range - use a reasonable default
+    # You may need to adjust these dates based on your data
+    updateDateRangeInput(session, 'time', 
+                        start = as.Date("2020-01-01"), 
+                        end = Sys.Date())
+  })
   
   
   ## Unit Nb tracking #############################################################
@@ -172,10 +199,10 @@ sidebarInputLayout <- function(input, output, session,
     # Call new unit module function with correct parameters based on module signature
     if (plotDateRangeSelection) {
       # For modules that DON'T take df (like grabSamplesTimeSeries)
-      callModule(innerModule, unitsNb(), dateRange, ..., parentSession = session)
+      callModule(innerModule, unitsNb(), dateRange, ...)
     } else {
       # For modules that DO take df (like highFreqTimeSeries)
-      callModule(innerModule, unitsNb(), df, dateRange, ..., parentSession = session)
+      callModule(innerModule, unitsNb(), df, dateRange, ...)
     }
   })
   

@@ -83,38 +83,27 @@ highFreqTimeSeriesUI <- function(id, pool) {
         class = 'checkbox-grid'        
       ),
       # Show stats button
-      actionButton(ns('showStats'), 'Show Stats', class = 'custom-style'),
-      # Instructions for zooming
-      div(
-        class = 'zoom-instructions',
-        style = 'margin-top: 10px; padding: 8px; background-color: #f8f9fa; border-radius: 4px; font-size: 12px;',
-        HTML('<strong>Zoom:</strong> Drag to select range on plot<br><strong>Reset:</strong> Double-click plot')
-      )
+      actionButton(ns('showStats'), 'Show Stats', class = 'custom-style')
     ),
     # Create the UI plots
     'plots' = div(
       # Set UI plots id and class
       id = paste0('hf-time-serie-plots-', id),
       class = 'time-serie-plot point-hover-widget-plot',
-      # Add JavaScript for console logging
-      tags$script("
-        Shiny.addCustomMessageHandler('console-log', function(message) {
-          console.log(message);
-        });
-      "),
       # Create a plotOutput for the regular timeserie plot
       spinnerPlotOutput(
         ns('highfreq'),
         # Make data points hoverable
         hover = hoverOpts(ns('highfreq_hover')),
-        # Re-enable brush functionality with proper error handling
+        # Make plot brushable in the x direction with a debouncing delay type
+        # Reset it when the plot is refreshed
         brush = brushOpts(
           ns('highfreq_brush'),
           direction = 'x',
           delayType = 'debounce',
           resetOnNew = TRUE
         ),
-        # Make plot double clickable for reset
+        # Make plot double clickable
         dblclick = dblclickOpts(ns('highfreq_dblclick'))
       )
     )
@@ -125,7 +114,7 @@ highFreqTimeSeriesUI <- function(id, pool) {
 
 ## Create the server function of the module ###############################################
 
-highFreqTimeSeries <- function(input, output, session, df, dateRange, pool, parentSession = NULL) {
+highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
 # Create the logic for the highFreqTimeSeries module
 # Parameters:
 #  - input, output, session: Default needed parameters to create a module
@@ -135,7 +124,6 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool, pare
 #               + min: Date, the lower bound to filter the date
 #               + max: Date, the upper bound to filter the data
 #  - pool: The pool connection to the database
-#  - parentSession: The parent session of the module
 # 
 # Returns a reactive expression containing the updated date range with the same format as the input
   
@@ -182,91 +170,48 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool, pare
   # Create a data reactive expression that return a subset of the data
   # Using the dateRange, selectedSites_d and param reactive expressions
   data <- reactive({
-    # Wrap entire data processing in tryCatch to prevent crashes
-    tryCatch({
-      # Validate inputs before processing
-      req(dateRange())
-      req(selectedSites_d())
-      req(param())
+    # Select df
+    df <- df[[input$dataFreq]]
+    
+    # If the raw data is selected filter also for modeled data
+    if (input$dataFreq == '10min') {
+      # Define data types to remove depending on the state of showModeledData
+      # If nothing to remove, set to 'NULL' as string to avoid match error
+      typesToRemove <- c('modeled')
+      if (input$showModeledData) typesToRemove <- 'NULL'
       
-      # Additional validation for date range
-      if (is.null(dateRange()$min) || is.null(dateRange()$max) ||
-          !inherits(dateRange()$min, "Date") || !inherits(dateRange()$max, "Date") ||
-          dateRange()$min >= dateRange()$max) {
-        return(NULL)
-      }
-      
-      # Select df
-      df <- df[[input$dataFreq]]
-      
-      # Validate that df exists and has data
-      if (is.null(df) || nrow(df) == 0) {
-        return(NULL)
-      }
-      
-      # If the raw data is selected filter also for modeled data
-      if (input$dataFreq == '10min') {
-        # Define data types to remove depending on the state of showModeledData
-        # If nothing to remove, set to 'NULL' as string to avoid match error
-        typesToRemove <- c('modeled')
-        if (input$showModeledData) typesToRemove <- 'NULL'
-        
-        # Filter the data using the selected sites and the date range
-        df %<>% filter(
-          Site_ID %in% selectedSites_d(),
-          date(Date) >= dateRange()$min,
-          date(Date) <= dateRange()$max
-        )
-        
-        # Check if filtering resulted in empty data
-        if (nrow(df) == 0) return(NULL)
-        
-        # Continue with data transformation
-        df %<>%
-          # Select the date, Site_ID, all the parameter specific columns and remove modeled column not used
-          select(Date, Site_ID, starts_with(param()$data), -ends_with(typesToRemove)) %>% 
-          # Pivot longer the data to get a data_type and a value column
-          pivot_longer(
-            ends_with(c('measured', 'modeled')),
-            names_to = 'data_type',
-            names_pattern = '.*_(.*)',
-            names_transform = list('data_type' = as.factor),
-            values_to = 'value'
-          ) %>% 
-          # Rename with singlePoint column
-          rename(singlePoint = ends_with('singlePoint'))
-      } else {
-        # Filter the data using the selected sites and the date range
-        # Then select the parameter and rename the column to 'value'
-        df %<>% filter(
-          Site_ID %in% selectedSites_d(),
-          date(Date) >= dateRange()$min,
-          date(Date) <= dateRange()$max
-        )
-        
-        # Check if filtering resulted in empty data
-        if (nrow(df) == 0) return(NULL)
-        
-        # Check if the parameter column exists
-        if (!param()$data %in% colnames(df)) {
-          return(NULL)
-        }
-        
-        # Select and rename columns
-        df %<>% select(Date, Site_ID, 'value' = param()$data)
-      }
-      
-      # Final validation of the processed data
-      if (is.null(df) || nrow(df) == 0) return(NULL)
-      
-      return(df)
-      
-    }, error = function(e) {
-      # Log error for debugging but don't crash
-      warning("Error in data processing: ", e$message)
-      return(NULL)
-    })
+      # Filter the data using the selected sites and the date range
+      df %<>% filter(
+        Site_ID %in% selectedSites_d(),
+        date(Date) >= dateRange()$min,
+        date(Date) <= dateRange()$max
+      ) %>%
+        # Select the date, Site_ID, all the parameter specific columns and remove modeled column not used
+        select(Date, Site_ID, starts_with(param()$data), -ends_with(typesToRemove)) %>% 
+        # Pivot longer the data to get a data_type and a value column
+        pivot_longer(
+          ends_with(c('measured', 'modeled')),
+          names_to = 'data_type',
+          names_pattern = '.*_(.*)',
+          names_transform = list('data_type' = as.factor),
+          values_to = 'value'
+        ) %>% 
+        # Rename with singlePoint column
+        rename(singlePoint = ends_with('singlePoint'))
+    } else {
+      # Filter the data using the selected sites and the date range
+      # Then select the parameter and rename the column to 'value'
+      df %<>% filter(
+        Site_ID %in% selectedSites_d(),
+        date(Date) >= dateRange()$min,
+        date(Date) <= dateRange()$max
+      ) %>% select(Date, Site_ID, 'value' = param()$data)
+    }
+    
+    # If there is no data return NULL else df
+    if (nrow(df) == 0) NULL else df
   })
+  
   
   ## Plots output logic ###########################################################
   
@@ -275,25 +220,18 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool, pare
     # If there are no data return NULL
     if (data() %>% is.null()) return(NULL)
     
-    # Additional validation for data structure
-    if (nrow(data()) == 0) return(NULL)
-    
-    # Try to create the plot with error handling
-    tryCatch({
-      # Create and return a highFreqTimeSeriePlot
-      highFreqTimeSeriePlot(
-        df = data(),
-        parameter = param(),
-        plotTitle = 'Sensor High Frequency Time Serie',
-        sites = sites,
-        modeledData = 'data_type' %in% colnames(data())
-      )
-    }, error = function(e) {
-      # Return a simple error plot instead of crashing
-      plot(1, 1, type = "n", xlab = "", ylab = "", main = "Error rendering plot")
-      text(1, 1, paste("Plot error:", e$message), cex = 0.8)
-    })
+    # Create and return a highFreqTimeSeriePlot
+    highFreqTimeSeriePlot(
+      df = data(),
+      parameter = param(),
+      plotTitle = 'Sensor High Frequency Time Serie',
+      sites = sites,
+      modeledData = 'data_type' %in% colnames(data())
+    )
   })
+  
+  
+  
   
   ## Plot hovering logic ##########################################################
   
@@ -437,80 +375,58 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool, pare
   
   ## Update dateRange with plot brushing and double click logic ####################################
   
-  # Direct brush handling - bypass module return system
-  # Update the date range input directly in the sidebarInputLayout module
-  
-  # Observe brush events and directly update the date range input
-  observeEvent(input$highfreq_brush, {
-    brush <- input$highfreq_brush
+  # Create a reactive expression that contains the new dateRange to be used globally
+  # With the same format as the input dateRange
+  # Should be returned by the module
+  # Converting number to date using the Linux epoch time as origin
+  updateDateRange <- reactive({
+    # Validate brush input exists and has valid coordinates
+    req(input$highfreq_brush)
+    req(input$highfreq_brush$xmin)
+    req(input$highfreq_brush$xmax)
     
-    # Validate brush coordinates
-    if (is.null(brush) || 
-        is.null(brush$xmin) || 
-        is.null(brush$xmax) ||
-        !is.numeric(brush$xmin) ||
-        !is.numeric(brush$xmax) ||
-        brush$xmin >= brush$xmax) {
-      return()
+    # Validate that coordinates are numeric and in correct order
+    if (!is.numeric(input$highfreq_brush$xmin) || 
+        !is.numeric(input$highfreq_brush$xmax) ||
+        input$highfreq_brush$xmin >= input$highfreq_brush$xmax) {
+      return(NULL)
     }
     
-    # Convert brush coordinates to dates with error handling
+    # Convert to dates with error handling
     tryCatch({
-      min_date <- as.Date(as.POSIXct(brush$xmin, origin = "1970-01-01", tz = "GMT"))
-      max_date <- as.Date(as.POSIXct(brush$xmax, origin = "1970-01-01", tz = "GMT"))
+      min_date <- as.Date(as.POSIXct(input$highfreq_brush$xmin, origin = "1970-01-01", tz = "GMT"))
+      max_date <- as.Date(as.POSIXct(input$highfreq_brush$xmax, origin = "1970-01-01", tz = "GMT"))
       
       # Validate converted dates
       if (is.na(min_date) || is.na(max_date) || min_date >= max_date) {
-        return()
+        return(NULL)
       }
       
-      # Additional validation for reasonable date range
-      current_year <- as.numeric(format(Sys.Date(), "%Y"))
-      if (as.numeric(format(min_date, "%Y")) < 1900 || 
-          as.numeric(format(max_date, "%Y")) > (current_year + 10)) {
-        showNotification("Date range is outside valid range. Please select dates within a reasonable timeframe.", 
-                         type = "warning", duration = 4)
-        return()
-      }
-      
-      # Debug message
-      session$sendCustomMessage("console-log", 
-        paste("DEBUG: High frequency brush triggered with:", min_date, "to", max_date))
-      
-      # Directly update the date range input using the parent session
-      tryCatch({
-        targetSession <- if (!is.null(parentSession)) parentSession else session$parent
-        updateDateRangeInput(targetSession, 'time', start = min_date, end = max_date)
-        showNotification("Zoom applied successfully!", type = "message", duration = 2)
-        session$sendCustomMessage("console-log", "DEBUG: High frequency date range updated successfully")
-      }, error = function(e) {
-        session$sendCustomMessage("console-log", 
-          paste("DEBUG: Failed to update date range:", e$message))
-        showNotification("Failed to apply zoom. Please try again.", type = "error", duration = 3)
-      })
-      
+      # Return the valid date range
+      list('min' = min_date, 'max' = max_date)
     }, error = function(e) {
-      session$sendCustomMessage("console-log", 
-        paste("DEBUG: Error processing brush coordinates:", e$message))
-    })
-  }, ignoreInit = TRUE, ignoreNULL = TRUE)
-  
-  # Handle double-click to reset date range
-  observeEvent(input$highfreq_dblclick, {
-    tryCatch({
-      # Reset to original date range
-      targetSession <- if (!is.null(parentSession)) parentSession else session$parent
-      updateDateRangeInput(targetSession, 'time', 
-                          start = min(df$`24H`$Date, na.rm = TRUE), 
-                          end = max(df$`24H`$Date, na.rm = TRUE))
-      showNotification("Date range reset!", type = "message", duration = 2)
-      session$sendCustomMessage("console-log", "DEBUG: High frequency date range reset")
-    }, error = function(e) {
-      session$sendCustomMessage("console-log", 
-        paste("DEBUG: Failed to reset date range:", e$message))
+      # Return NULL if conversion fails
+      return(NULL)
     })
   })
   
-  # Return NULL since we're bypassing the module return system
-  return(NULL)
+  # Create a reactive value that update each time the plot is double clicked
+  # Used as trigger to reset the date range in the outer module
+  # Initialised to NULL to avoid a dateRange reset when a new unit is created
+  resetDateRange <- reactiveVal(NULL)
+  
+  # Create an observe event that react on plot double click to reset the date range
+  observeEvent(input$highfreq_dblclick, {
+    if (is.null(resetDateRange())) {
+      resetDateRange(1)
+    } else {
+      resetDateRange(resetDateRange() + 1)
+    }
+  })
+  
+  # Return the new dateRange values and date range reset trigger in order to update the outer module dateRangeInput
+  return(list(
+    'update' = updateDateRange,
+    'reset' = resetDateRange
+  ))
 }
