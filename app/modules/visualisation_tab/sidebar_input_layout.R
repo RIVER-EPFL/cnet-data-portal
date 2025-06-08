@@ -132,33 +132,40 @@ sidebarInputLayout <- function(input, output, session,
     dateRangeActions <- callModule(innerModule, '1', df, dateRange, ...)
   }
   
-  # Handle date range updates from modules
-  observeEvent(dateRangeActions$update(), ignoreInit = TRUE, ignoreNULL = TRUE, {
-    # Get the new date range
-    newDateRange <- dateRangeActions$update()
-    
-    # Validate the new date range
-    if (!is.null(newDateRange) && 
-        !is.null(newDateRange$min) && 
-        !is.null(newDateRange$max) &&
-        inherits(newDateRange$min, "Date") &&
-        inherits(newDateRange$max, "Date") &&
-        newDateRange$min < newDateRange$max) {
-      
-      # Update the date range input
-      updateDateRangeInput(session, 'time', 
-                          start = newDateRange$min, 
-                          end = newDateRange$max)
+  # Handle date range updates from modules (only if dateRangeActions is available)
+  observe({
+    if (!is.null(dateRangeActions) && !is.null(dateRangeActions$update)) {
+      observeEvent(dateRangeActions$update(), ignoreInit = TRUE, ignoreNULL = TRUE, {
+        # Get the new date range
+        newDateRange <- dateRangeActions$update()
+        
+        # Validate the new date range
+        if (!is.null(newDateRange) && 
+            !is.null(newDateRange$min) && 
+            !is.null(newDateRange$max) &&
+            inherits(newDateRange$min, "Date") &&
+            inherits(newDateRange$max, "Date") &&
+            newDateRange$min < newDateRange$max) {
+          
+          # Update the date range input
+          updateDateRangeInput(session, 'time', 
+                              start = newDateRange$min, 
+                              end = newDateRange$max)
+        }
+      })
     }
   })
   
-  # Handle date range reset from modules  
-  observeEvent(dateRangeActions$reset(), ignoreInit = TRUE, ignoreNULL = TRUE, {
-    # Reset to original date range - use a reasonable default
-    # You may need to adjust these dates based on your data
-    updateDateRangeInput(session, 'time', 
-                        start = as.Date("2020-01-01"), 
-                        end = Sys.Date())
+  # Handle date range reset from modules (only if dateRangeActions is available)
+  observe({
+    if (!is.null(dateRangeActions) && !is.null(dateRangeActions$reset)) {
+      observeEvent(dateRangeActions$reset(), ignoreInit = TRUE, ignoreNULL = TRUE, {
+        # Reset to original date range using the minDate and maxDate parameters
+        updateDateRangeInput(session, 'time', 
+                            start = minDate, 
+                            end = maxDate)
+      })
+    }
   })
   
   
