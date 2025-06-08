@@ -97,6 +97,12 @@ highFreqTimeSeriesUI <- function(id, pool) {
       # Set UI plots id and class
       id = paste0('hf-time-serie-plots-', id),
       class = 'time-serie-plot point-hover-widget-plot',
+      # Add JavaScript for console logging
+      tags$script("
+        Shiny.addCustomMessageHandler('console-log', function(message) {
+          console.log(message);
+        });
+      "),
       # Create a plotOutput for the regular timeserie plot
       spinnerPlotOutput(
         ns('highfreq'),
@@ -446,7 +452,17 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
   
   # Create a reactive expression that returns the updated date range
   updateDateRange <- reactive({
-    updatedDateRange()
+    # Return the current value of updatedDateRange reactive value
+    # This will trigger when updatedDateRange() changes
+    result <- updatedDateRange()
+    
+    # Debug: Show when updateDateRange is triggered in browser console
+    if (!is.null(result)) {
+      session$sendCustomMessage("console-log", 
+        paste("DEBUG: updateDateRange triggered with:", result$min, "to", result$max))
+    }
+    
+    result
   })
   
   # Create a reactive value that update each time the plot is double clicked
@@ -503,6 +519,10 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
                   'max' = max_date
                 ))
                 showNotification("Zoom range selected. Applying zoom...", type = "message", duration = 2)
+                
+                # Debug: Send message to browser console
+                session$sendCustomMessage("console-log", 
+                  paste("DEBUG: Click-to-zoom setting date range:", min_date, "to", max_date))
               } else {
                 showNotification("Date range is outside valid range. Please select dates within a reasonable timeframe.", type = "warning", duration = 4)
               }
