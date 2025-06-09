@@ -134,7 +134,14 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
     arrange(order) %>% select(-order)
   
   # Create a reactive expression returning the selected sites
-  selectedSites <- reactive({input$sites})
+  selectedSites <- reactive({
+    tryCatch({
+      input$sites
+    }, error = function(e) {
+      message("High frequency selectedSites error: ", e$message)
+      return(character(0))
+    })
+  })
   
   # Create a debounced reactive expression returning the selected sites
   selectedSites_d <-  selectedSites %>% debounce(1000)
@@ -144,12 +151,25 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
   ## Parameter logic ##############################################################
   
   # Create a reactive expression that returns the filtered parameters df
-  param <- reactive(getRows(
-    pool, 'sensor_params_plotting',
-    active == TRUE,
-    param_name == local(input$param),
-    columns = c('order', 'param_name', 'units', 'data', 'description')
-  ) %>% arrange(order) %>% select(-order))
+  param <- reactive({
+    tryCatch({
+      getRows(
+        pool, 'sensor_params_plotting',
+        active == TRUE,
+        param_name == local(input$param),
+        columns = c('order', 'param_name', 'units', 'data', 'description')
+      ) %>% arrange(order) %>% select(-order)
+    }, error = function(e) {
+      message("High frequency param error: ", e$message)
+      return(data.frame(
+        param_name = character(0),
+        units = character(0),
+        data = character(0),
+        description = character(0),
+        stringsAsFactors = FALSE
+      ))
+    })
+  })
   
   
   
@@ -159,7 +179,11 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
   # Create observeEvent that react to frequence update
   # Display showModeledData checkbox if the selected data frequence is 10min
   observeEvent(input$dataFreq, ignoreInit = TRUE, {
-    toggleElement('showModeledData', condition = input$dataFreq == '10min')
+    tryCatch({
+      toggleElement('showModeledData', condition = input$dataFreq == '10min')
+    }, error = function(e) {
+      message("High frequency dataFreq toggle error: ", e$message)
+    })
   })
   
   
@@ -186,10 +210,10 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
       }
       
       # Get the data from the selected frequency
-      df <- df[[input$dataFreq]]
+      filteredDf <- df[[input$dataFreq]]
       
       # Validate df exists and has data
-      if (is.null(df) || nrow(df) == 0) {
+      if (is.null(filteredDf) || nrow(filteredDf) == 0) {
         return(NULL)
       }
       
@@ -201,7 +225,7 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
         if (input$showModeledData) typesToRemove <- 'NULL'
         
         # Filter the data using the selected sites and the date range
-        df %<>% filter(
+        filteredDf %<>% filter(
           Site_ID %in% selectedSites_d(),
           date(Date) >= dateRange()$min,
           date(Date) <= dateRange()$max
@@ -221,7 +245,7 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
       } else {
         # For non-10min data, filter the data using the selected sites and the date range
         # Then select the parameter and rename the column to 'value'
-        df %<>% filter(
+        filteredDf %<>% filter(
           Site_ID %in% selectedSites_d(),
           date(Date) >= dateRange()$min,
           date(Date) <= dateRange()$max
@@ -229,7 +253,7 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
       }
       
       # If there is no data return NULL else df
-      if (nrow(df) == 0) NULL else df
+      if (nrow(filteredDf) == 0) NULL else filteredDf
       
     }, error = function(e) {
       # Log error for debugging but don't crash the app
@@ -292,8 +316,11 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
   ## Plot hovering logic ##########################################################
   
   # Activate the hover widget for the regular timeserie plot
-  pointHoverWidgetServer(session, 'highfreq', data, reactive(input$highfreq_hover), y_label = 'Parameter')
-
+  tryCatch({
+    pointHoverWidgetServer(session, 'highfreq', data, reactive(input$highfreq_hover), y_label = 'Parameter')
+  }, error = function(e) {
+    message("High frequency hover widget error: ", e$message)
+  })
   
   
   
@@ -302,19 +329,23 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
   
   # Create an observeEvent that react to the parameter helper icon button
   observeEvent(input$paramHelper, {
-    # Render the description UI in the modal
-    output$description <- renderUI(tags$p(
-      class = 'description',
-      param()$description
-    ))
-    
-    # Create modal with the corresponding htmlOutput
-    showModal(modalDialog(
-      title = 'Parameter description',
-      htmlOutput(session$ns('description')),
-      footer = modalButtonWithClass('Dismiss', class = 'custom-style'),
-      easyClose = TRUE
-    ))
+    tryCatch({
+      # Render the description UI in the modal
+      output$description <- renderUI(tags$p(
+        class = 'description',
+        param()$description
+      ))
+      
+      # Create modal with the corresponding htmlOutput
+      showModal(modalDialog(
+        title = 'Parameter description',
+        htmlOutput(session$ns('description')),
+        footer = modalButtonWithClass('Dismiss', class = 'custom-style'),
+        easyClose = TRUE
+      ))
+    }, error = function(e) {
+      message("High frequency paramHelper modal error: ", e$message)
+    })
   })
   
   
@@ -323,22 +354,30 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
   
   # Create an observeEvent that react to the data freq helper button
   observeEvent(input$freqHelper, ignoreInit = TRUE, {
-    showModal(modalDialog(
-      title = 'Sensor data frequency selection',
-      htmlTemplate('./html_components/data_freq_help.html', icon = icon('exclamation-triangle')),
-      footer = modalButtonWithClass('Dismiss', class = 'custom-style'),
-      easyClose = TRUE
-    ))
+    tryCatch({
+      showModal(modalDialog(
+        title = 'Sensor data frequency selection',
+        htmlTemplate('./html_components/data_freq_help.html', icon = icon('exclamation-triangle')),
+        footer = modalButtonWithClass('Dismiss', class = 'custom-style'),
+        easyClose = TRUE
+      ))
+    }, error = function(e) {
+      message("High frequency freqHelper modal error: ", e$message)
+    })
   })
   
   # Create an observeEvent that react to modeled data helper button
   observeEvent(input$modeledHelper, ignoreInit = TRUE, {
-    showModal(modalDialog(
-      title = 'Modeled data',
-      htmlTemplate('./html_components/data_modeled_help.html'),
-      footer = modalButtonWithClass('Dismiss', class = 'custom-style'),
-      easyClose = TRUE
-    ))
+    tryCatch({
+      showModal(modalDialog(
+        title = 'Modeled data',
+        htmlTemplate('./html_components/data_modeled_help.html'),
+        footer = modalButtonWithClass('Dismiss', class = 'custom-style'),
+        easyClose = TRUE
+      ))
+    }, error = function(e) {
+      message("High frequency modeledHelper modal error: ", e$message)
+    })
   })
   
   
@@ -348,81 +387,126 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
   
   # Create a reactive expression returning the the summarised data
   statsData <- reactive({
-    # SHow spinner
-    show_spinner('hf-stats')
-    # Take the 10min data and filter by sites and date
-    stats <- df$`10min` %>% filter(
-      Site_ID %in% selectedSites_d(),
-      date(Date) >= dateRange()$min,
-      date(Date) <= dateRange()$max
-      # Select the date, sites and selected parameter columns
-    ) %>% select(
-      Date,
-      Site_ID,
-      starts_with(param()$data),
-      -ends_with('singlePoint')
-      # Pivot longer to summarise easily
-    ) %>% pivot_longer(
-      ends_with(c('measured', 'modeled')),
-      names_to = 'data_type',
-      names_pattern = '.*_(.*)',
-      names_transform = list('data_type' = as.factor),
-      values_to = 'value'
-      # Group by sites and data_type
-    )%>% group_by(
-      Site_ID, data_type
-      # Get the number of values per data_type and site
-    ) %>% summarise(
-      n = sum(!is.na(value))
-      # Pivot wider again to compute some info easily
-    ) %>% pivot_wider(
-      names_from = data_type,
-      values_from = n
-      # Add a total column
-    ) %>% mutate(
-      total = sum(measured, modeled)
-      # Add percentage columns
-    ) %>% mutate(
-      measured_pct = measured / total * 100,
-      modeled_pct = modeled / total * 100
-      # Pivot wider to get the site in columns
-    ) %>% pivot_wider(
-      names_from = Site_ID,
-      values_from = -c(Site_ID),
-      names_glue = "{Site_ID}_{.value}"
-      # Pivot longer to get the stats in rows
-    ) %>% pivot_longer(
-      everything(),
-      names_to = c('.value', 'Stats'),
-      names_pattern = '^([A-Z]*)_(.*)'
-      # Capitalize the stats name
-    ) %>% mutate(Stats = str_to_title(Stats))
-    # Hide spinner
-    hide_spinner('hf-stats')
-    # Return stats table
-    stats
+    tryCatch({
+      # Show spinner
+      show_spinner('hf-stats')
+      
+      # Validate inputs
+      if (is.null(selectedSites_d()) || length(selectedSites_d()) == 0) {
+        hide_spinner('hf-stats')
+        return(data.frame())
+      }
+      
+      if (is.null(dateRange()) || is.null(dateRange()$min) || is.null(dateRange()$max)) {
+        hide_spinner('hf-stats')
+        return(data.frame())
+      }
+      
+      if (is.null(param()) || nrow(param()) == 0) {
+        hide_spinner('hf-stats')
+        return(data.frame())
+      }
+      
+      if (is.null(df) || is.null(df$`10min`) || nrow(df$`10min`) == 0) {
+        hide_spinner('hf-stats')
+        return(data.frame())
+      }
+      
+      # Take the 10min data and filter by sites and date
+      stats <- df$`10min` %>% filter(
+        Site_ID %in% selectedSites_d(),
+        date(Date) >= dateRange()$min,
+        date(Date) <= dateRange()$max
+        # Select the date, sites and selected parameter columns
+      ) %>% select(
+        Date,
+        Site_ID,
+        starts_with(param()$data),
+        -ends_with('singlePoint')
+        # Pivot longer to summarise easily
+      ) %>% pivot_longer(
+        ends_with(c('measured', 'modeled')),
+        names_to = 'data_type',
+        names_pattern = '.*_(.*)',
+        names_transform = list('data_type' = as.factor),
+        values_to = 'value'
+        # Group by sites and data_type
+      )%>% group_by(
+        Site_ID, data_type
+        # Get the number of values per data_type and site
+      ) %>% summarise(
+        n = sum(!is.na(value))
+        # Pivot wider again to compute some info easily
+      ) %>% pivot_wider(
+        names_from = data_type,
+        values_from = n
+        # Add a total column
+      ) %>% mutate(
+        total = sum(measured, modeled)
+        # Add percentage columns
+      ) %>% mutate(
+        measured_pct = measured / total * 100,
+        modeled_pct = modeled / total * 100
+        # Pivot wider to get the site in columns
+      ) %>% pivot_wider(
+        names_from = Site_ID,
+        values_from = -c(Site_ID),
+        names_glue = "{Site_ID}_{.value}"
+      ) %>% pivot_longer(
+        everything(),
+        names_to = c('.value', 'Stats'),
+        names_pattern = '^([A-Z]*)_(.*)'
+        # Capitalize the stats name
+      ) %>% mutate(Stats = str_to_title(Stats))
+      
+      # Hide spinner
+      hide_spinner('hf-stats')
+      # Return stats table
+      return(stats)
+      
+    }, error = function(e) {
+      message("High frequency statsData error: ", e$message)
+      # Hide spinner on error
+      hide_spinner('hf-stats')
+      # Return empty data frame
+      return(data.frame())
+    })
   })
   
   # Render the stats tables in the modal
-  output$sensorStats <- renderStatsTables(
-    elements = unique(sites$catchment),
-    data = statsData,
-    sites = sites,
-    tableFunction = createSensorStatsTable
-  )
+  output$sensorStats <- renderStatsTables({
+    tryCatch({
+      # Render the stats tables
+      renderStatsTables(
+        elements = unique(sites$catchment),
+        data = statsData(),
+        sites = sites,
+        tableFunction = createSensorStatsTable
+      )
+    }, error = function(e) {
+      # Log error for debugging but don't crash the app
+      message("High frequency stats table rendering error: ", e$message)
+      # Return a simple error message instead of crashing
+      tags$p("Error rendering stats table. Please try adjusting date range.")
+    })
+  })
   
   # Create an observeEvent that react to the show stats button
   observeEvent(input$showStats, ignoreInit = TRUE, {
-    # Create a moadal containing the stats output
-    showModal(modalDialog(
-      title = 'Sensor summary statistics',
-      # Add spinner
-      use_busy_spinner(spin = 'fading-circle', color = "#e24727", position = 'full-page', spin_id = 'hf-stats', margins = c(30, 10)),
-      # Add UI output
-      htmlOutput(session$ns('sensorStats'), class = 'stats-summary'),
-      footer = modalButtonWithClass('Dismiss', class = 'custom-style'),
-      easyClose = TRUE
-    ))
+    tryCatch({
+      # Create a moadal containing the stats output
+      showModal(modalDialog(
+        title = 'Sensor summary statistics',
+        # Add spinner
+        use_busy_spinner(spin = 'fading-circle', color = "#e24727", position = 'full-page', spin_id = 'hf-stats', margins = c(30, 10)),
+        # Add UI output
+        htmlOutput(session$ns('sensorStats'), class = 'stats-summary'),
+        footer = modalButtonWithClass('Dismiss', class = 'custom-style'),
+        easyClose = TRUE
+      ))
+    }, error = function(e) {
+      message("High frequency showStats modal error: ", e$message)
+    })
   })
   
   
@@ -449,6 +533,16 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
       return(NULL)
     }
     
+    # Check for infinite or NaN values
+    if (!is.finite(input$highfreq_brush$xmin) || !is.finite(input$highfreq_brush$xmax)) {
+      return(NULL)
+    }
+    
+    # Check for extremely large or small values that might cause issues
+    if (abs(input$highfreq_brush$xmin) > 1e10 || abs(input$highfreq_brush$xmax) > 1e10) {
+      return(NULL)
+    }
+    
     # Try to convert brush coordinates to dates with error handling
     tryCatch({
       # Convert number to date using the Linux epoch time as origin
@@ -462,6 +556,12 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
       
       # Ensure min is less than max
       if (minDate >= maxDate) {
+        return(NULL)
+      }
+      
+      # Check if dates are within reasonable bounds (not too far in past/future)
+      currentDate <- Sys.Date()
+      if (minDate < as.Date("1900-01-01") || maxDate > (currentDate + 365*10)) {
         return(NULL)
       }
       
@@ -484,6 +584,11 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
   # With error handling to prevent crashes
   observeEvent(input$highfreq_dblclick, {
     tryCatch({
+      # Check if session is still valid
+      if (is.null(session) || session$closed) {
+        return(NULL)
+      }
+      
       if (is.null(resetDateRangeHighFreq())) {
         resetDateRangeHighFreq(1)
       } else {
@@ -496,8 +601,17 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
   })
   
   # Return the new dateRange values and date range reset trigger in order to update the outer module dateRangeInput
-  return(list(
-    'update' = updateDateRangeHighFreq,
-    'reset' = resetDateRangeHighFreq
-  ))
+  # Add additional safety check
+  tryCatch({
+    return(list(
+      'update' = updateDateRangeHighFreq,
+      'reset' = resetDateRangeHighFreq
+    ))
+  }, error = function(e) {
+    message("High frequency return error: ", e$message)
+    return(list(
+      'update' = reactive(NULL),
+      'reset' = reactiveVal(NULL)
+    ))
+  })
 }
