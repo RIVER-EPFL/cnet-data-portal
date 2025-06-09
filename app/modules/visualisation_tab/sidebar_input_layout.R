@@ -22,21 +22,15 @@ sidebarInputLayoutUI <- function(id, minDate, maxDate, innerModuleUI, ...) {
   
   # Create the module layout
   div(
-    # Add JavaScript for console logging
-    tags$script("
-      Shiny.addCustomMessageHandler('console-log', function(message) {
-        console.log(message);
-      });
-    "),
     # First div containing the global inputs
     div(
       class = 'main-inputs',
       # Date Range to select the global dateRange
       dateRangeInput(ns('time'), 'Date range:',
                      start = "2024-05-15",
-                     end = maxDate,
+                     end = "2025-12-31",
                      min = minDate,
-                     max = maxDate,
+                     max = "2025-12-31",
                      format = 'dd/mm/yyyy',
                      separator = '-'),
       # Create a nutton to reset the date range
@@ -112,7 +106,7 @@ sidebarInputLayout <- function(input, output, session,
   
   # Create an observeEvent that allows to reset the date range when resetDateRange is clicked
   observeEvent(input$resetDateRange, {
-    updateDateRangeInput(session, 'time', start = as.Date("2024-05-15"), end = maxDate)
+    updateDateRangeInput(session, 'time', start = minDate, end = maxDate)
   })
   
   
@@ -123,50 +117,48 @@ sidebarInputLayout <- function(input, output, session,
   
   ## First unit module calling ####################################################
 
-  # Call the inner module with correct parameters based on module signature
-  if (plotDateRangeSelection) {
-    # For modules that DON'T take df (like grabSamplesTimeSeries)
+  # Call the first unit of the innerModule and retrieve, if any, the named list containing:
+  #  - update: Reactive expression containing the updated dateRange
+  #  - reset: Reactive value, updated each time the plot is double clicked, used as dateRange reset trigger
+  if (is.null(df)) {
     dateRangeActions <- callModule(innerModule, '1', dateRange, ...)
   } else {
-    # For modules that DO take df (like highFreqTimeSeries)
     dateRangeActions <- callModule(innerModule, '1', df, dateRange, ...)
   }
   
-  # Handle date range updates from modules (only if dateRangeActions is available)
-  observe({
-    if (!is.null(dateRangeActions) && !is.null(dateRangeActions$update)) {
-      observeEvent(dateRangeActions$update(), ignoreInit = TRUE, ignoreNULL = TRUE, {
-        # Get the new date range
-        newDateRange <- dateRangeActions$update()
-        
-        # Validate the new date range
-        if (!is.null(newDateRange) && 
-            !is.null(newDateRange$min) && 
-            !is.null(newDateRange$max) &&
-            inherits(newDateRange$min, "Date") &&
-            inherits(newDateRange$max, "Date") &&
-            newDateRange$min < newDateRange$max) {
-          
-          # Update the date range input
-          updateDateRangeInput(session, 'time', 
-                              start = newDateRange$min, 
-                              end = newDateRange$max)
-        }
-      })
-    }
-  })
+  # If the inner module plots are modifying the date range
+  if (plotDateRangeSelection) {
+    # Add an observeEvent that track the plot brushing dateRange input for the first innerModule unit
+    observeEvent(dateRangeActions$update(), ignoreInit = TRUE, {
+      # Run only if dates are non null
+      req(length(dateRangeActions$update()$min) != 0, length(dateRangeActions$update()$min) != 0)
+      # Store new dates
+      newMin <- dateRangeActions$update()$min
+      newMax <- dateRangeActions$update()$max
+      
+      # Ensure that dates are within range
+      if (newMin < date(minDate)) newMin <- minDate
+      if (newMax < date(minDate)) newMax <- minDate
+      if (newMin > date(maxDate)) newMin <- maxDate
+      if (newMax > date(maxDate)) newMax <- maxDate
+      
+      # Update the dateRangeInput accordingly
+      updateDateRangeInput(session, 'time', start = newMin, end = newMax)
+      # Set the zoomed value to TRUE
+      zoomed(TRUE)
+    })
   
-  # Handle date range reset from modules (only if dateRangeActions is available)
-  observe({
-    if (!is.null(dateRangeActions) && !is.null(dateRangeActions$reset)) {
-      observeEvent(dateRangeActions$reset(), ignoreInit = TRUE, ignoreNULL = TRUE, {
-        # Reset to original date range using the fixed start date and maxDate parameters
-        updateDateRangeInput(session, 'time', 
-                            start = as.Date("2024-05-15"), 
-                            end = maxDate)
-      })
-    }
-  })
+    # Add an observeEvent that react to the first innerModule unit dateRange reset trigger
+    observeEvent(dateRangeActions$reset(), {
+      if (zoomed()) {
+        # Reset the dateRange to initial dates only if plots are zoomed
+        updateDateRangeInput(session, 'time', start = minDate, end = maxDate)
+        # Set the zoomed value to FALSE
+        zoomed(FALSE)
+      }
+    })
+  }
+  
   
   
   ## Unit Nb tracking #############################################################
@@ -203,13 +195,66 @@ sidebarInputLayout <- function(input, output, session,
       immediate = TRUE
     )
     
-    # Call new unit module function with correct parameters based on module signature
-    if (plotDateRangeSelection) {
-      # For modules that DON'T take df (like grabSamplesTimeSeries)
-      callModule(innerModule, unitsNb(), dateRange, ...)
+    # Call new unit module function and retrieve, if any, the named list containing:
+    #  - update: Reactive expression containing the updated dateRange
+    #  - reset: Reactive value, updated each time the plot is double clicked, used as dateRange reset trigger
+    ##if (is.null(df)) {
+    ##  dateRangeActions <- callModule(innerModule, unitsNb(), dateRange, ...)
+    ##} else {
+    ##  dateRangeActions <- callModule(innerModule, unitsNb(), df, dateRange, ...)
+    ##}
+
+    if (is.null(df)) {
+      dateRangeActions <- callModule(
+      innerModule,
+      "1",
+      df = NULL,
+      dateRange = dateRange,
+      ...
+      )
     } else {
-      # For modules that DO take df (like highFreqTimeSeries)
-      callModule(innerModule, unitsNb(), df, dateRange, ...)
+      dateRangeActions <- callModule(
+      innerModule,
+      "1",
+      df = df,
+      dateRange = dateRange,
+      ...
+    )
+    }
+
+    ################# here
+    
+    # If the inner module plots are modifying the date range
+    if (plotDateRangeSelection) {
+      # Add an observeEvent that track the plot brushing dateRange input for the new module unit
+      observeEvent(dateRangeActions$update(), ignoreInit = TRUE, {
+        # Run only if dates are non null
+        req(length(dateRangeActions$update()$min) != 0, length(dateRangeActions$update()$min) != 0)
+        # Store new dates
+        newMin <- dateRangeActions$update()$min
+        newMax <- dateRangeActions$update()$max
+        
+        # Ensure that dates are within range
+        if (newMin < date(minDate)) newMin <- minDate
+        if (newMax < date(minDate)) newMax <- minDate
+        if (newMin > date(maxDate)) newMin <- maxDate
+        if (newMax > date(maxDate)) newMax <- maxDate
+        
+        # Update the dateRangeInput accordingly
+        updateDateRangeInput(session, 'time', start = newMin, end = newMax)
+        # Set the zoomed value to TRUE
+        zoomed(TRUE)
+      })
+      
+      # Add an observeEvent that react to the new module unit dateRange reset trigger
+      observeEvent(dateRangeActions$reset(), {
+        if (zoomed()) {
+          # Reset the dateRange to initial dates only if plots are zoomed
+          updateDateRangeInput(session, 'time', start = minDate, end = maxDate)
+          # Set the zoomed value to FALSE
+          zoomed(FALSE)
+        }
+      })
     }
   })
   
