@@ -557,30 +557,43 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
   # Create a dedicated reactive expression for high frequency brushing with robust error handling
   # This is separate from grab samples to avoid interfering with working functionality
   updateDateRangeHighFreq <- reactive({
+    runjs("console.log('High frequency brushing: Starting execution');")
+    
     # Validate brush input exists and has required properties
     if (is.null(input$highfreq_brush)) {
+      runjs("console.log('High frequency brushing: No brush input');")
       return(NULL)
     }
+    
+    runjs("console.log('High frequency brushing: Brush input exists');")
     
     # Check if brush coordinates are valid numbers
     if (is.null(input$highfreq_brush$xmin) || is.null(input$highfreq_brush$xmax)) {
+      runjs("console.log('High frequency brushing: Missing brush coordinates');")
       return(NULL)
     }
     
+    runjs(paste0("console.log('High frequency brushing: Coordinates - xmin:", input$highfreq_brush$xmin, " xmax:", input$highfreq_brush$xmax, "');"))
+    
     # Validate that brush coordinates are numeric
     if (!is.numeric(input$highfreq_brush$xmin) || !is.numeric(input$highfreq_brush$xmax)) {
+      runjs("console.log('High frequency brushing: Non-numeric coordinates');")
       return(NULL)
     }
     
     # Check for infinite or NaN values
     if (!is.finite(input$highfreq_brush$xmin) || !is.finite(input$highfreq_brush$xmax)) {
+      runjs("console.log('High frequency brushing: Infinite or NaN coordinates');")
       return(NULL)
     }
     
     # Check for extremely large or small values that might cause issues
     if (abs(input$highfreq_brush$xmin) > 1e10 || abs(input$highfreq_brush$xmax) > 1e10) {
+      runjs("console.log('High frequency brushing: Extremely large coordinates');")
       return(NULL)
     }
+    
+    runjs("console.log('High frequency brushing: Coordinates validated, converting to dates');")
     
     # Try to convert brush coordinates to dates with error handling
     tryCatch({
@@ -588,21 +601,28 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
       minDate <- as.Date(as.POSIXct(input$highfreq_brush$xmin, origin = "1970-01-01", tz = "GMT"))
       maxDate <- as.Date(as.POSIXct(input$highfreq_brush$xmax, origin = "1970-01-01", tz = "GMT"))
       
+      runjs(paste0("console.log('High frequency brushing: Converted dates - min:", minDate, " max:", maxDate, "');"))
+      
       # Validate converted dates are not NA
       if (is.na(minDate) || is.na(maxDate)) {
+        runjs("console.log('High frequency brushing: NA dates after conversion');")
         return(NULL)
       }
       
       # Ensure min is less than max
       if (minDate >= maxDate) {
+        runjs("console.log('High frequency brushing: Invalid date range (min >= max)');")
         return(NULL)
       }
       
       # Check if dates are within reasonable bounds (not too far in past/future)
       currentDate <- Sys.Date()
       if (minDate < as.Date("1900-01-01") || maxDate > (currentDate + 365*10)) {
+        runjs("console.log('High frequency brushing: Dates outside reasonable bounds');")
         return(NULL)
       }
+      
+      runjs("console.log('High frequency brushing: Returning valid date range');")
       
       # Return valid date range
       return(list(

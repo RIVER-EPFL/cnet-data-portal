@@ -130,11 +130,19 @@ sidebarInputLayout <- function(input, output, session,
   if (plotDateRangeSelection) {
     # Add an observeEvent that track the plot brushing dateRange input for the first innerModule unit
     observeEvent(dateRangeActions$update(), ignoreInit = TRUE, {
+      runjs("console.log('Sidebar layout: Brush update triggered');")
+      
       # Run only if dates are non null
       req(length(dateRangeActions$update()$min) != 0, length(dateRangeActions$update()$min) != 0)
+      
+      runjs("console.log('Sidebar layout: req() passed, extracting dates');")
+      
       # Store new dates
       newMin <- dateRangeActions$update()$min
       newMax <- dateRangeActions$update()$max
+      
+      runjs(paste0("console.log('Sidebar layout: newMin=", newMin, ", newMax=", newMax, "');"))
+      runjs(paste0("console.log('Sidebar layout: minDate=", minDate, ", maxDate=", maxDate, "');"))
       
       # Ensure that dates are within range - add NA checks to prevent if statement errors
       if (!is.na(newMin) && !is.na(minDate) && newMin < date(minDate)) newMin <- minDate
@@ -142,10 +150,14 @@ sidebarInputLayout <- function(input, output, session,
       if (!is.na(newMin) && !is.na(maxDate) && newMin > date(maxDate)) newMin <- maxDate
       if (!is.na(newMax) && !is.na(maxDate) && newMax > date(maxDate)) newMax <- maxDate
       
+      runjs(paste0("console.log('Sidebar layout: Final dates - newMin=", newMin, ", newMax=", newMax, "');"))
+      
       # Update the dateRangeInput accordingly
       updateDateRangeInput(session, 'time', start = newMin, end = newMax)
       # Set the zoomed value to TRUE
       zoomed(TRUE)
+      
+      runjs("console.log('Sidebar layout: Update completed successfully');")
     })
   
     # Add an observeEvent that react to the first innerModule unit dateRange reset trigger
@@ -228,11 +240,19 @@ sidebarInputLayout <- function(input, output, session,
     if (plotDateRangeSelection) {
       # Add an observeEvent that track the plot brushing dateRange input for the new module unit
       observeEvent(dateRangeActions$update(), ignoreInit = TRUE, {
+        runjs("console.log('Sidebar layout: Brush update triggered');")
+        
         # Run only if dates are non null
         req(length(dateRangeActions$update()$min) != 0, length(dateRangeActions$update()$min) != 0)
+        
+        runjs("console.log('Sidebar layout: req() passed, extracting dates');")
+        
         # Store new dates
         newMin <- dateRangeActions$update()$min
         newMax <- dateRangeActions$update()$max
+        
+        runjs(paste0("console.log('Sidebar layout: newMin=", newMin, ", newMax=", newMax, "');"))
+        runjs(paste0("console.log('Sidebar layout: minDate=", minDate, ", maxDate=", maxDate, "');"))
         
         # Ensure that dates are within range - add NA checks to prevent if statement errors
         if (!is.na(newMin) && !is.na(minDate) && newMin < date(minDate)) newMin <- minDate
@@ -240,10 +260,14 @@ sidebarInputLayout <- function(input, output, session,
         if (!is.na(newMin) && !is.na(maxDate) && newMin > date(maxDate)) newMin <- maxDate
         if (!is.na(newMax) && !is.na(maxDate) && newMax > date(maxDate)) newMax <- maxDate
         
+        runjs(paste0("console.log('Sidebar layout: Final dates - newMin=", newMin, ", newMax=", newMax, "');"))
+        
         # Update the dateRangeInput accordingly
         updateDateRangeInput(session, 'time', start = newMin, end = newMax)
         # Set the zoomed value to TRUE
         zoomed(TRUE)
+        
+        runjs("console.log('Sidebar layout: Update completed successfully');")
       })
       
       # Add an observeEvent that react to the new module unit dateRange reset trigger

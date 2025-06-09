@@ -59,8 +59,8 @@ visualisationTabUI <- function(id, pool, hfDf) {
       # Create a sidebarInputLayout UI with for the highFreqTimeSeries module
       sidebarInputLayoutUI(
         ns('sensorsTimeseries'),
-        minDate = min(hfDf$`24H`$Date, na.rm = TRUE),
-        maxDate = max(hfDf$`24H`$Date, na.rm = TRUE),
+        minDate = if(nrow(hfDf$`24H`) > 0 && any(!is.na(hfDf$`24H`$Date))) min(hfDf$`24H`$Date, na.rm = TRUE) else as.Date("2024-01-01"),
+        maxDate = if(nrow(hfDf$`24H`) > 0 && any(!is.na(hfDf$`24H`$Date))) max(hfDf$`24H`$Date, na.rm = TRUE) else Sys.Date(),
         innerModuleUI = highFreqTimeSeriesUI,
         pool = pool
       ),
@@ -91,8 +91,22 @@ visualisationTab <- function(input, output, session, pool, user, hfDf) {
   
   # For sensors
   hfMinMaxDates <- list(
-    min = min(hfDf$`24H`$Date, na.rm = TRUE),
-    max = max(hfDf$`24H`$Date, na.rm = TRUE)
+    min = if(nrow(hfDf$`24H`) > 0 && any(!is.na(hfDf$`24H`$Date))) {
+      minVal <- min(hfDf$`24H`$Date, na.rm = TRUE)
+      runjs(paste0("console.log('Visualisation tab: Calculated hf min date: ", minVal, "');"))
+      minVal
+    } else {
+      runjs("console.log('Visualisation tab: Using fallback hf min date: 2024-01-01');")
+      as.Date("2024-01-01")
+    },
+    max = if(nrow(hfDf$`24H`) > 0 && any(!is.na(hfDf$`24H`$Date))) {
+      maxVal <- max(hfDf$`24H`$Date, na.rm = TRUE)
+      runjs(paste0("console.log('Visualisation tab: Calculated hf max date: ", maxVal, "');"))
+      maxVal
+    } else {
+      runjs("console.log('Visualisation tab: Using fallback hf max date: today');")
+      Sys.Date()
+    }
   )
   
   
