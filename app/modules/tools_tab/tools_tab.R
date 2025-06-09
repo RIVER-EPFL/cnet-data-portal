@@ -16,6 +16,7 @@ source('./modules/tools_tab/tools/ions_tool.R')
 source('./modules/tools_tab/tools/nutrients_tool.R')
 source('./modules/tools_tab/tools/tss_afdm_tool.R')
 source('./modules/tools_tab/tools/chla_tool.R')
+source('./modules/tools_tab/tools/discharge_tool.R')
 source('./utils/calculation_functions.R')
 
 
@@ -188,6 +189,13 @@ toolsTabUI <- function(id) {
         )
       ),
       value = ns('chlaTool')
+    ),
+    tabPanel(
+      # Tab title
+      'Discharge',
+      # Tab content
+      dischargeToolUI(ns('dischargeTool')),
+      value = ns('dischargeTool')
     )
   )
 }
@@ -261,5 +269,9 @@ toolsTab <- function(input, output, session, pool, userRole) {
   callModule(toolsLayout, 'chlaTool', chlaTool, chlaToolUI, pool,
              instructionPanel = TRUE, updateVerification = userRole == 'intern',
              createNew = FALSE, canUpdate = userRole %in% c('sber', 'admin'))
+  
+  # Call the tools layout module with the discharge tool
+  callModule(toolsLayout, 'dischargeTool', dischargeTool, dischargeToolUI, pool,
+             instructionPanel = TRUE, updateVerification = userRole == 'intern',
+             createNew = FALSE, canUpdate = userRole %in% c('sber', 'admin'))
 }
-
