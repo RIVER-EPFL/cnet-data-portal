@@ -16,10 +16,43 @@ source('./modules/tools_tab/tools/ions_tool.R')
 source('./modules/tools_tab/tools/nutrients_tool.R')
 source('./modules/tools_tab/tools/tss_afdm_tool.R')
 source('./modules/tools_tab/tools/chla_tool.R')
-source('./modules/tools_tab/tools/discharge_tool.R')
+# Conditionally source discharge tool only if required packages are available
+if (exists("discharge_packages_available") && discharge_packages_available) {
+  source('./modules/tools_tab/tools/discharge_tool.R')
+}
 source('./utils/calculation_functions.R')
 
+## Helper function to create discharge tab conditionally #########################
 
+create_discharge_tab <- function(ns) {
+  if (exists("discharge_packages_available") && discharge_packages_available) {
+    return(tabPanel(
+      # Tab title
+      'Discharge',
+      # Tab content
+      dischargeToolUI(ns('dischargeTool')),
+      value = ns('dischargeTool')
+    ))
+  } else {
+    return(tabPanel(
+      # Tab title
+      'Discharge',
+      # Tab content
+      div(
+        class = 'discharge-unavailable',
+        h4('Discharge Tool Unavailable'),
+        p('The discharge tool requires additional packages that are not installed:'),
+        tags$ul(
+          tags$li('pracma'),
+          tags$li('gridExtra'), 
+          tags$li('signal')
+        ),
+        p('Please contact your system administrator to install these packages.')
+      ),
+      value = ns('dischargeTool')
+    ))
+  }
+}
 
 ## Create module UI ###############################################################
 
@@ -190,13 +223,7 @@ toolsTabUI <- function(id) {
       ),
       value = ns('chlaTool')
     ),
-    tabPanel(
-      # Tab title
-      'Discharge',
-      # Tab content
-      dischargeToolUI(ns('dischargeTool')),
-      value = ns('dischargeTool')
-    )
+    create_discharge_tab(ns)
   )
 }
 
@@ -271,5 +298,7 @@ toolsTab <- function(input, output, session, pool, userRole) {
              createNew = FALSE, canUpdate = userRole %in% c('sber', 'admin'))
   
   # Call the discharge tool directly (no database connection needed)
-  callModule(dischargeTool, 'dischargeTool', pool = pool)
+  if (exists("discharge_packages_available") && discharge_packages_available) {
+    callModule(dischargeTool, 'dischargeTool', pool = pool)
+  }
 }
