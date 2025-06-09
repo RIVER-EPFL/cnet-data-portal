@@ -39,21 +39,27 @@
 
 ## Load Libraries #################################################################
 
-# Function to install packages if they don't exist
-install_if_missing <- function(packages) {
+# Function to safely check and load packages
+safe_require <- function(packages) {
+  missing_packages <- c()
   for (pkg in packages) {
     if (!require(pkg, character.only = TRUE, quietly = TRUE)) {
-      cat("Installing missing package:", pkg, "\n")
-      install.packages(pkg, repos = "https://cran.r-project.org", 
-                      dependencies = TRUE, quiet = TRUE)
-      library(pkg, character.only = TRUE)
+      missing_packages <- c(missing_packages, pkg)
     }
   }
+  
+  if (length(missing_packages) > 0) {
+    cat("Warning: The following packages are missing:\n")
+    cat(paste(missing_packages, collapse = ", "), "\n")
+    cat("Please rebuild the Docker image to include these packages.\n")
+    return(FALSE)
+  }
+  return(TRUE)
 }
 
-# Install missing packages required for discharge tool
+# Check for required packages for discharge tool
 required_packages <- c("pracma", "gridExtra", "signal")
-install_if_missing(required_packages)
+discharge_packages_available <- safe_require(required_packages)
 
 library(shiny)
 library(shinyjs)
@@ -83,9 +89,13 @@ library(purrr)
 library(sodium)
 library(bigleaf)
 library(RMySQL)
-library(pracma)
-library(gridExtra)
-library(signal)
+
+# Load discharge-specific packages only if available
+if (discharge_packages_available) {
+  library(pracma)
+  library(gridExtra)
+  library(signal)
+}
 
 # Set locale to utf-8
 Sys.setlocale('LC_ALL', 'en_US.UTF-8')
