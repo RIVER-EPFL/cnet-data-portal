@@ -195,48 +195,35 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
   # Using the dateRange, selectedSites_d and param reactive expressions
   data <- reactive({
     tryCatch({
-      runjs("console.log('High frequency data reactive: Starting execution');")
-      
       # Validate required inputs
       if (is.null(selectedSites_d()) || length(selectedSites_d()) == 0) {
-        runjs("console.log('High frequency data reactive: No sites selected');")
         return(NULL)
       }
       
       if (is.null(param()) || is.null(dateRange())) {
-        runjs("console.log('High frequency data reactive: Missing param or dateRange');")
         return(NULL)
       }
       
       # Validate date range has required properties
       if (is.null(dateRange()$min) || is.null(dateRange()$max)) {
-        runjs("console.log('High frequency data reactive: Invalid date range');")
         return(NULL)
       }
       
       # Validate input$dataFreq exists
       if (is.null(input$dataFreq) || input$dataFreq == "") {
-        runjs("console.log('High frequency data reactive: Missing dataFreq');")
         return(NULL)
       }
-      
-      runjs(paste0("console.log('High frequency data reactive: Using frequency ", input$dataFreq, "');"))
       
       # Get the data from the selected frequency
       filteredDf <- df[[input$dataFreq]]
       
       # Validate df exists and has data
       if (is.null(filteredDf) || nrow(filteredDf) == 0) {
-        runjs(paste0("console.log('High frequency data reactive: No data for frequency ", input$dataFreq, "');"))
         return(NULL)
       }
       
-      runjs(paste0("console.log('High frequency data reactive: Processing ", nrow(filteredDf), " rows');"))
-      
       # Check if the raw data is selected (10min) to handle modeled data properly
       if (input$dataFreq == '10min') {
-        runjs("console.log('High frequency data reactive: Processing 10min data');")
-        
         # Validate showModeledData input exists
         if (is.null(input$showModeledData)) {
           input$showModeledData <- FALSE  # Default value
@@ -246,8 +233,6 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
         # If nothing to remove, set to 'NULL' as string to avoid match error
         typesToRemove <- c('modeled')
         if (input$showModeledData) typesToRemove <- 'NULL'
-        
-        runjs(paste0("console.log('High frequency data reactive: Types to remove: ", paste(typesToRemove, collapse = ", "), "');"))
         
         # Filter the data using the selected sites and the date range
         filteredDf %<>% filter(
@@ -268,8 +253,6 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
           # Rename with singlePoint column
           rename(singlePoint = ends_with('singlePoint'))
       } else {
-        runjs("console.log('High frequency data reactive: Processing non-10min data');")
-        
         # For non-10min data, filter the data using the selected sites and the date range
         # Then select the parameter and rename the column to 'value'
         filteredDf %<>% filter(
@@ -279,21 +262,16 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
         ) %>% select(Date, Site_ID, 'value' = param()$data)
       }
       
-      runjs(paste0("console.log('High frequency data reactive: Filtered to ", nrow(filteredDf), " rows');"))
-      
       # If there is no data return NULL else df
       if (nrow(filteredDf) == 0) {
-        runjs("console.log('High frequency data reactive: No data after filtering');")
         return(NULL)
       } else {
-        runjs(paste0("console.log('High frequency data reactive: Returning ", nrow(filteredDf), " rows');"))
         return(filteredDf)
       }
       
     }, error = function(e) {
       # Log error for debugging but don't crash the app
-      runjs(paste0("console.error('High frequency data filtering error: ", e$message, "');"))
-      runjs(paste0("console.error('Error occurred at: ", paste(sys.calls(), collapse = " -> "), "');"))
+      message("High frequency data filtering error: ", e$message)
       # Return empty data frame with correct structure to prevent further crashes
       return(data.frame(
         Date = as.POSIXct(character(0)),
@@ -303,6 +281,8 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
       ))
     })
   })
+  
+  
   
   
   ## Plots output logic ###########################################################
@@ -555,43 +535,30 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
   # Create a dedicated reactive expression for high frequency brushing with robust error handling
   # This is separate from grab samples to avoid interfering with working functionality
   updateDateRangeHighFreq <- reactive({
-    runjs("console.log('High frequency brushing: Starting execution');")
-    
     # Validate brush input exists and has required properties
     if (is.null(input$highfreq_brush)) {
-      runjs("console.log('High frequency brushing: No brush input');")
       return(NULL)
     }
-    
-    runjs("console.log('High frequency brushing: Brush input exists');")
     
     # Check if brush coordinates are valid numbers
     if (is.null(input$highfreq_brush$xmin) || is.null(input$highfreq_brush$xmax)) {
-      runjs("console.log('High frequency brushing: Missing brush coordinates');")
       return(NULL)
     }
     
-    runjs(paste0("console.log('High frequency brushing: Coordinates - xmin:", input$highfreq_brush$xmin, "xmax:", input$highfreq_brush$xmax, "');"))
-    
     # Validate that brush coordinates are numeric
     if (!is.numeric(input$highfreq_brush$xmin) || !is.numeric(input$highfreq_brush$xmax)) {
-      runjs("console.log('High frequency brushing: Non-numeric coordinates');")
       return(NULL)
     }
     
     # Check for infinite or NaN values
     if (!is.finite(input$highfreq_brush$xmin) || !is.finite(input$highfreq_brush$xmax)) {
-      runjs("console.log('High frequency brushing: Infinite or NaN coordinates');")
       return(NULL)
     }
     
     # Check for extremely large or small values that might cause issues
     if (abs(input$highfreq_brush$xmin) > 1e10 || abs(input$highfreq_brush$xmax) > 1e10) {
-      runjs("console.log('High frequency brushing: Extremely large coordinates');")
       return(NULL)
     }
-    
-    runjs("console.log('High frequency brushing: Coordinates validated, converting to dates');")
     
     # Try to convert brush coordinates to dates with error handling
     tryCatch({
@@ -599,28 +566,21 @@ highFreqTimeSeries <- function(input, output, session, df, dateRange, pool) {
       minDate <- as.Date(as.POSIXct(input$highfreq_brush$xmin, origin = "1970-01-01", tz = "GMT"))
       maxDate <- as.Date(as.POSIXct(input$highfreq_brush$xmax, origin = "1970-01-01", tz = "GMT"))
       
-      runjs(paste0("console.log('High frequency brushing: Converted dates - min:", minDate, "max:", maxDate, "');"))
-      
       # Validate converted dates are not NA
       if (is.na(minDate) || is.na(maxDate)) {
-        runjs("console.log('High frequency brushing: NA dates after conversion');")
         return(NULL)
       }
       
       # Ensure min is less than max
       if (minDate >= maxDate) {
-        runjs("console.log('High frequency brushing: Invalid date range (min >= max)');")
         return(NULL)
       }
       
       # Check if dates are within reasonable bounds (not too far in past/future)
       currentDate <- Sys.Date()
       if (minDate < as.Date("1900-01-01") || maxDate > (currentDate + 365*10)) {
-        runjs("console.log('High frequency brushing: Dates outside reasonable bounds');")
         return(NULL)
       }
-      
-      runjs("console.log('High frequency brushing: Returning valid date range');")
       
       # Return valid date range
       return(list(

@@ -136,11 +136,11 @@ sidebarInputLayout <- function(input, output, session,
       newMin <- dateRangeActions$update()$min
       newMax <- dateRangeActions$update()$max
       
-      # Ensure that dates are within range
-      if (newMin < date(minDate)) newMin <- minDate
-      if (newMax < date(minDate)) newMax <- minDate
-      if (newMin > date(maxDate)) newMin <- maxDate
-      if (newMax > date(maxDate)) newMax <- maxDate
+      # Ensure that dates are within range - add NA checks to prevent if statement errors
+      if (!is.na(newMin) && !is.na(minDate) && newMin < date(minDate)) newMin <- minDate
+      if (!is.na(newMax) && !is.na(minDate) && newMax < date(minDate)) newMax <- minDate
+      if (!is.na(newMin) && !is.na(maxDate) && newMin > date(maxDate)) newMin <- maxDate
+      if (!is.na(newMax) && !is.na(maxDate) && newMax > date(maxDate)) newMax <- maxDate
       
       # Update the dateRangeInput accordingly
       updateDateRangeInput(session, 'time', start = newMin, end = newMax)
@@ -234,11 +234,11 @@ sidebarInputLayout <- function(input, output, session,
         newMin <- dateRangeActions$update()$min
         newMax <- dateRangeActions$update()$max
         
-        # Ensure that dates are within range
-        if (newMin < date(minDate)) newMin <- minDate
-        if (newMax < date(minDate)) newMax <- minDate
-        if (newMin > date(maxDate)) newMin <- maxDate
-        if (newMax > date(maxDate)) newMax <- maxDate
+        # Ensure that dates are within range - add NA checks to prevent if statement errors
+        if (!is.na(newMin) && !is.na(minDate) && newMin < date(minDate)) newMin <- minDate
+        if (!is.na(newMax) && !is.na(minDate) && newMax < date(minDate)) newMax <- minDate
+        if (!is.na(newMin) && !is.na(maxDate) && newMin > date(maxDate)) newMin <- maxDate
+        if (!is.na(newMax) && !is.na(maxDate) && newMax > date(maxDate)) newMax <- maxDate
         
         # Update the dateRangeInput accordingly
         updateDateRangeInput(session, 'time', start = newMin, end = newMax)
