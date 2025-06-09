@@ -38,6 +38,23 @@
 
 
 ## Load Libraries #################################################################
+
+# Function to install packages if they don't exist
+install_if_missing <- function(packages) {
+  for (pkg in packages) {
+    if (!require(pkg, character.only = TRUE, quietly = TRUE)) {
+      cat("Installing missing package:", pkg, "\n")
+      install.packages(pkg, repos = "https://cran.r-project.org", 
+                      dependencies = TRUE, quiet = TRUE)
+      library(pkg, character.only = TRUE)
+    }
+  }
+}
+
+# Install missing packages required for discharge tool
+required_packages <- c("pracma", "gridExtra", "signal")
+install_if_missing(required_packages)
+
 library(shiny)
 library(shinyjs)
 library(shinyWidgets)
@@ -60,6 +77,15 @@ library(DT)
 library(rhandsontable)
 library(promises)
 library(future)
+library(sass)
+library(readr)
+library(purrr)
+library(sodium)
+library(bigleaf)
+library(RMySQL)
+library(pracma)
+library(gridExtra)
+library(signal)
 
 # Set locale to utf-8
 Sys.setlocale('LC_ALL', 'en_US.UTF-8')
