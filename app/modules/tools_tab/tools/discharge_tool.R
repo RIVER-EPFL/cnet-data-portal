@@ -2,24 +2,25 @@
 
 ## Create module UI function ######################################################
 
-dischargeToolUI <- function(id, ...) {
+dischargeToolUI <- function(id, pool, ...) {
 # Create the UI for the dischargeTool module
 # Parameters:
 #  - id: String, the module id
+#  - pool: The pool connection to the database
 # 
 # Returns a div containing the layout
   
   # Create namespace
   ns <- NS(id)
   
-  # Create layout with full width usage
+  # Create layout with vertical panels
   div(
     class = 'discharge-tool tools-layout',
     
-    # Panel 1: File upload and preview (full width)
+    # Panel 1: File upload and preview
     div(
       class = 'panel panel-default',
-      style = 'margin-bottom: 25px;',
+      style = 'margin-bottom: 30px;',
       div(
         class = 'panel-heading',
         h4('1. Upload Data File', class = 'panel-title')
@@ -45,10 +46,10 @@ dischargeToolUI <- function(id, ...) {
       )
     ),
     
-    # Panel 2: Parameters (full width)
+    # Panel 2: Parameters
     div(
       class = 'panel panel-default',
-      style = 'margin-bottom: 25px;',
+      style = 'margin-bottom: 30px;',
       div(
         class = 'panel-heading',
         h4('2. Configure Parameters', class = 'panel-title')
@@ -103,10 +104,10 @@ dischargeToolUI <- function(id, ...) {
       )
     ),
     
-    # Panel 3: Calculation and Results (full width)
+    # Panel 3: Calculation and Results
     div(
       class = 'panel panel-default',
-      style = 'margin-bottom: 25px;',
+      style = 'margin-bottom: 30px;',
       div(
         class = 'panel-heading',
         div(
@@ -143,7 +144,7 @@ dischargeToolUI <- function(id, ...) {
     # Panel 4: Database Update for Q_Ls parameter
     div(
       class = 'panel panel-default',
-      style = 'margin-bottom: 25px;',
+      style = 'margin-bottom: 30px;',
       div(
         class = 'panel-heading',
         h4('4. Update Database (Q_Ls Parameter)', class = 'panel-title')
@@ -152,14 +153,29 @@ dischargeToolUI <- function(id, ...) {
         class = 'panel-body',
         fluidRow(
           column(3,
-            selectInput(ns('station'), 'Station',
-                       choices = c('Select station...' = ''),
-                       width = '100%')
+            # Station selection (matching DOC tool pattern)
+            selectInput(
+              ns('site'),
+              'Station',
+              choices = c(
+                'Choose a station ...' = '',
+                parseOptions(
+                  getRows(pool, 'stations', columns = c('order', 'name')) %>%
+                  arrange(order) %>% select(-order),
+                  'name'
+                )
+              )
+            )
           ),
           column(3,
-            dateInput(ns('date'), 'Date',
-                     value = Sys.Date(),
-                     width = '100%')
+            # Date selection (matching DOC tool pattern)
+            selectInput(
+              ns('date'),
+              'Date',
+              choices = c(
+                'Choose a date ...' = ''
+              )
+            )
           ),
           column(3,
             numericInput(ns('q_ls'), 'Q_Ls (L/s)',
@@ -529,42 +545,46 @@ dischargeTool <- function(input, output, session, pool, site, datetime, ...) {
     }
   })
   
-  ## Load stations for dropdown ###################################################
-  
-  # Get stations from database
-  stations <- reactive({
-    req(pool)
-    tryCatch({
-      getRows(pool, 'stations', columns = c('name', 'full_name')) %>%
-        arrange(name) %>%
-        mutate(display = paste0(name, " - ", full_name))
-    }, error = function(e) {
-      data.frame(name = character(0), full_name = character(0), display = character(0))
-    })
+  ## Reset date when site changes
+  observeEvent(input$site, {
+    updateSelectInput(session, 'date', selected = '')
   })
   
-  # Update station choices
-  observe({
-    station_data <- stations()
-    if (nrow(station_data) > 0) {
-      choices <- setNames(station_data$name, station_data$display)
-      choices <- c('Select station...' = '', choices)
-      updateSelectInput(session, 'station', choices = choices)
-    }
+  # Update date choices when site changes
+  observeEvent(input$site, {
+    req(input$site != '')
+    
+    # Get available dates for the selected station
+    tryCatch({
+      dates <- getRows(pool, 'data', 
+                      station == input$site,
+                      columns = 'DATE_reading') %>%
+        distinct(DATE_reading) %>%
+        arrange(desc(DATE_reading))
+      
+      if (nrow(dates) > 0) {
+        date_choices <- c('Choose a date ...' = '', parseOptions(dates, 'DATE_reading'))
+        updateSelectInput(session, 'date', choices = date_choices)
+      } else {
+        updateSelectInput(session, 'date', choices = c('No dates available' = ''))
+      }
+    }, error = function(e) {
+      updateSelectInput(session, 'date', choices = c('Error loading dates' = ''))
+    })
   })
   
   ## Database Check and Update Logic ##############################################
   
   # Check button logic
   observeEvent(input$check, {
-    req(input$station, input$date)
+    req(input$site, input$date)
     
     # Reset checked status and errors
     values$checked <- FALSE
     values$dbError <- NULL
     
     # Validate inputs
-    if (input$station == '') {
+    if (input$site == '') {
       values$dbError <- "Please select a station."
       return()
     }
@@ -582,13 +602,13 @@ dischargeTool <- function(input, output, session, pool, site, datetime, ...) {
     # Check if record exists
     tryCatch({
       existing_record <- getRows(pool, 'data', 
-                                station == input$station & DATE_reading == as.character(input$date),
+                                station == input$site & DATE_reading == as.character(input$date),
                                 columns = c('id', 'Q_Ls'))
       
       if (nrow(existing_record) == 0) {
-        values$dbError <- paste("No data record found for station", input$station, "on", input$date)
+        values$dbError <- paste("No data record found for station", input$site, "on", input$date)
       } else if (nrow(existing_record) > 1) {
-        values$dbError <- paste("Multiple records found for station", input$station, "on", input$date, 
+        values$dbError <- paste("Multiple records found for station", input$site, "on", input$date, 
                                "- please contact administrator")
       } else {
         # Record found, check is successful
@@ -605,7 +625,7 @@ dischargeTool <- function(input, output, session, pool, site, datetime, ...) {
   
   # Update button logic
   observeEvent(input$update, {
-    req(values$checked, input$station, input$date, input$q_ls)
+    req(values$checked, input$site, input$date, input$q_ls)
     
     if (!values$checked) {
       values$dbError <- "Please check the record first before updating."
@@ -615,7 +635,7 @@ dischargeTool <- function(input, output, session, pool, site, datetime, ...) {
     # Get the record to update
     tryCatch({
       existing_record <- getRows(pool, 'data', 
-                                station == input$station & DATE_reading == as.character(input$date),
+                                station == input$site & DATE_reading == as.character(input$date),
                                 columns = c('id'))
       
       if (nrow(existing_record) == 1) {
@@ -624,7 +644,7 @@ dischargeTool <- function(input, output, session, pool, site, datetime, ...) {
         
         if (result == '') {
           values$dbError <- paste("✅ Successfully updated Q_Ls to", input$q_ls, "L/s for station", 
-                                 input$station, "on", input$date)
+                                 input$site, "on", input$date)
           values$checked <- FALSE  # Reset check status after successful update
         } else {
           values$dbError <- paste("Update failed:", result)
