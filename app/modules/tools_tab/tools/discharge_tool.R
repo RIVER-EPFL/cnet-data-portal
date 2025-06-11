@@ -12,70 +12,205 @@ dischargeToolUI <- function(id, ...) {
   # Create namespace
   ns <- NS(id)
   
-  # Create layout
+  # Create layout with improved organization
   div(
     class = 'discharge-tool tools-layout',
+    
+    # Top section: File upload and preview
     div(
-      class = 'file-upload',
-      h4('Upload Data File'),
-      fileInput(ns('dataFile'), 'Choose CSV File',
-                accept = c('.csv')),
+      class = 'row',
       div(
-        class = 'file-preview',
-        DT::dataTableOutput(ns('filePreview'))
-      )
-    ),
-    div(
-      class = 'parameters',
-      h4('Parameters'),
-      fluidRow(
-        column(6,
-          h5('Rhodamine Parameters'),
-          numericInput(ns('initial_mass_rhodamine_wt'), 'Initial Mass Rhodamine (g)', 
-                      value = 3.38019, min = 0, step = 0.01),
-          numericInput(ns('concentration_rhodamine_wt'), 'Rhodamine Concentration (%)', 
-                      value = 23.83, min = 0, max = 100, step = 0.01),
-          numericInput(ns('initial_water_temp_degC'), 'Initial Water Temperature (°C)', 
-                      value = 3.3, step = 0.1),
-          numericInput(ns('n_rhodamine'), 'Temperature Correction Factor', 
-                      value = 0.026, step = 0.001)
-        ),
-        column(6,
-          h5('Salt Parameters'),
-          numericInput(ns('initial_mass_salt'), 'Initial Mass Salt (g)', 
-                      value = 2000, min = 0, step = 1),
-          numericInput(ns('slope_conductivity'), 'Conductivity Slope', 
-                      value = 1951.1, min = 0, step = 0.1)
-        )
-      ),
-      fluidRow(
-        column(6,
-          numericInput(ns('distance'), 'Distance (m)', 
-                      value = 79, min = 0, step = 1)
-        ),
-        column(6,
-          numericInput(ns('T_ref'), 'Reference Temperature (°C)', 
-                      value = 25, step = 1)
-        )
-      )
-    ),
-    div(
-      class = 'calculation',
-      div(
-        class = 'calculation-header',
-        h4('Calculate Discharge:'),
-        actionButton(ns('calculate'), 'Calculate', class = 'custom-style custom-style--primary')
-      ),
-      div(
-        class = 'results',
-        h4('Results'),
-        verbatimTextOutput(ns('results')),
+        class = 'col-md-12',
         div(
-          class = 'plots',
-          plotOutput(ns('plots'), height = '400px')
+          class = 'panel panel-default',
+          div(
+            class = 'panel-heading',
+            h4('1. Upload Data File', class = 'panel-title')
+          ),
+          div(
+            class = 'panel-body',
+            fluidRow(
+              column(4,
+                fileInput(ns('dataFile'), 'Choose CSV File',
+                         accept = c('.csv'),
+                         buttonLabel = 'Browse...',
+                         placeholder = 'No file selected')
+              ),
+              column(8,
+                div(
+                  class = 'file-preview-container',
+                  DT::dataTableOutput(ns('filePreview'))
+                )
+              )
+            )
+          )
         )
       )
-    )
+    ),
+    
+    # Middle section: Parameters
+    div(
+      class = 'row',
+      div(
+        class = 'col-md-12',
+        div(
+          class = 'panel panel-default',
+          div(
+            class = 'panel-heading',
+            h4('2. Configure Parameters', class = 'panel-title')
+          ),
+          div(
+            class = 'panel-body',
+            fluidRow(
+              column(6,
+                div(
+                  class = 'parameter-group',
+                  h5('Rhodamine Parameters', class = 'parameter-group-title'),
+                  div(
+                    class = 'parameter-inputs',
+                    numericInput(ns('initial_mass_rhodamine_wt'), 'Initial Mass Rhodamine (g)', 
+                                value = 3.38019, min = 0, step = 0.01),
+                    numericInput(ns('concentration_rhodamine_wt'), 'Rhodamine Concentration (%)', 
+                                value = 23.83, min = 0, max = 100, step = 0.01),
+                    numericInput(ns('initial_water_temp_degC'), 'Initial Water Temperature (°C)', 
+                                value = 3.3, step = 0.1),
+                    numericInput(ns('n_rhodamine'), 'Temperature Correction Factor', 
+                                value = 0.026, step = 0.001)
+                  )
+                )
+              ),
+              column(6,
+                div(
+                  class = 'parameter-group',
+                  h5('Salt Parameters', class = 'parameter-group-title'),
+                  div(
+                    class = 'parameter-inputs',
+                    numericInput(ns('initial_mass_salt'), 'Initial Mass Salt (g)', 
+                                value = 2000, min = 0, step = 1),
+                    numericInput(ns('slope_conductivity'), 'Conductivity Slope', 
+                                value = 1951.1, min = 0, step = 0.1)
+                  )
+                )
+              )
+            ),
+            hr(),
+            fluidRow(
+              column(6,
+                numericInput(ns('distance'), 'Distance (m)', 
+                            value = 79, min = 0, step = 1)
+              ),
+              column(6,
+                numericInput(ns('T_ref'), 'Reference Temperature (°C)', 
+                            value = 25, step = 1)
+              )
+            )
+          )
+        )
+      )
+    ),
+    
+    # Bottom section: Calculation and Results
+    div(
+      class = 'row',
+      div(
+        class = 'col-md-12',
+        div(
+          class = 'panel panel-default',
+          div(
+            class = 'panel-heading',
+            div(
+              class = 'panel-title-with-button',
+              h4('3. Calculate Discharge', class = 'panel-title', style = 'display: inline-block; margin: 0;'),
+              actionButton(ns('calculate'), 'Calculate Discharge', 
+                          class = 'btn btn-primary btn-lg',
+                          style = 'float: right; margin-top: -5px;')
+            )
+          ),
+          div(
+            class = 'panel-body',
+            div(
+              class = 'results-container',
+              fluidRow(
+                column(6,
+                  div(
+                    class = 'results-text',
+                    h5('Calculation Results'),
+                    verbatimTextOutput(ns('results'))
+                  )
+                ),
+                column(6,
+                  div(
+                    class = 'results-plot',
+                    h5('Concentration Curves'),
+                    plotOutput(ns('plots'), height = '400px')
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    ),
+    
+    # Add custom CSS for better styling
+    tags$style(HTML("
+      .discharge-tool .panel {
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      
+      .discharge-tool .panel-heading {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+      }
+      
+      .discharge-tool .panel-title {
+        color: #495057;
+        font-weight: 600;
+      }
+      
+      .discharge-tool .parameter-group {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 10px;
+      }
+      
+      .discharge-tool .parameter-group-title {
+        color: #6c757d;
+        font-weight: 600;
+        margin-bottom: 15px;
+        border-bottom: 1px solid #dee2e6;
+        padding-bottom: 5px;
+      }
+      
+      .discharge-tool .file-preview-container {
+        max-height: 300px;
+        overflow-y: auto;
+      }
+      
+      .discharge-tool .results-container {
+        margin-top: 15px;
+      }
+      
+      .discharge-tool .results-text,
+      .discharge-tool .results-plot {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        height: 450px;
+      }
+      
+      .discharge-tool .panel-title-with-button {
+        width: 100%;
+        overflow: hidden;
+      }
+      
+      .discharge-tool .btn-lg {
+        font-size: 16px;
+        padding: 10px 20px;
+      }
+    "))
   )
 }
 
