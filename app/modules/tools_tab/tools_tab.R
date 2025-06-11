@@ -25,29 +25,77 @@ source('./utils/calculation_functions.R')
 ## Helper function to create discharge tab conditionally #########################
 
 create_discharge_tab <- function(ns) {
-  if (exists("discharge_packages_available") && discharge_packages_available) {
-    return(tabPanel(
-      # Tab title
-      'Discharge',
-      # Tab content
-      dischargeToolUI(ns('dischargeTool')),
-      value = ns('dischargeTool')
-    ))
+  # Create debug information
+  debug_exists <- exists("discharge_packages_available")
+  debug_value <- if (debug_exists) discharge_packages_available else "NOT_FOUND"
+  
+  # Create debug info HTML
+  debug_html <- paste(
+    "<div style='background: #f0f0f0; border: 1px solid #ccc; padding: 10px; margin: 10px 0; font-family: monospace; font-size: 12px;'>",
+    "<strong>DEBUG INFO:</strong><br/>",
+    "discharge_packages_available exists: ", debug_exists, "<br/>",
+    "discharge_packages_available value: ", debug_value, "<br/>",
+    "Timestamp: ", Sys.time(),
+    "</div>"
+  )
+  
+  # JavaScript console logging function
+  js_log <- function(message) {
+    tryCatch({
+      if (exists("runjs", where = "package:shinyjs")) {
+        shinyjs::runjs(paste0("console.log('R DEBUG (tools_tab): ", message, "');"))
+      }
+    }, error = function(e) {
+      cat("DEBUG (tools_tab):", message, "\n")
+    })
+  }
+  
+  js_log("create_discharge_tab called")
+  js_log(paste("discharge_packages_available exists:", exists("discharge_packages_available")))
+  
+  if (exists("discharge_packages_available")) {
+    js_log(paste("discharge_packages_available value:", discharge_packages_available))
   } else {
+    js_log("discharge_packages_available variable does NOT exist")
+  }
+  
+  if (exists("discharge_packages_available") && discharge_packages_available) {
+    js_log("Creating FUNCTIONAL discharge tab")
     return(tabPanel(
       # Tab title
       'Discharge',
       # Tab content
       div(
-        class = 'discharge-unavailable',
-        h4('Discharge Tool Unavailable'),
-        p('The discharge tool requires additional packages that are not installed:'),
-        tags$ul(
-          tags$li('pracma'),
-          tags$li('gridExtra'), 
-          tags$li('signal')
+        HTML(debug_html),
+        div(style = "background: #d4edda; border: 1px solid #c3e6cb; padding: 10px; margin: 10px 0; border-radius: 5px;",
+            h4("✓ Discharge Tool Available", style = "color: #155724; margin: 0;")
         ),
-        p('Please install these packages.')
+        dischargeToolUI(ns('dischargeTool'))
+      ),
+      value = ns('dischargeTool')
+    ))
+  } else {
+    js_log("Creating UNAVAILABLE discharge tab")
+    return(tabPanel(
+      # Tab title
+      'Discharge',
+      # Tab content
+      div(
+        HTML(debug_html),
+        div(style = "background: #f8d7da; border: 1px solid #f5c6cb; padding: 10px; margin: 10px 0; border-radius: 5px;",
+            h4("✗ Discharge Tool Unavailable", style = "color: #721c24; margin: 0;")
+        ),
+        div(
+          class = 'discharge-unavailable',
+          h4('Discharge Tool Unavailable'),
+          p('The discharge tool requires additional packages that are not installed:'),
+          tags$ul(
+            tags$li('pracma'),
+            tags$li('gridExtra'), 
+            tags$li('signal')
+          ),
+          p('Please install these packages.')
+        )
       ),
       value = ns('dischargeTool')
     ))
@@ -227,8 +275,6 @@ toolsTabUI <- function(id) {
   )
 }
 
-
-
 ## Create module server function ##################################################
 
 toolsTab <- function(input, output, session, pool, userRole) {
@@ -298,7 +344,16 @@ toolsTab <- function(input, output, session, pool, userRole) {
              createNew = FALSE, canUpdate = userRole %in% c('sber', 'admin'))
   
   # Call the discharge tool directly (no database connection needed)
+  # Debug discharge packages availability
+  shinyjs::runjs(paste0("console.log('SERVER DEBUG: discharge_packages_available exists: ", exists("discharge_packages_available"), "');"))
+  if (exists("discharge_packages_available")) {
+    shinyjs::runjs(paste0("console.log('SERVER DEBUG: discharge_packages_available value: ", discharge_packages_available, "');"))
+  }
+  
   if (exists("discharge_packages_available") && discharge_packages_available) {
+    shinyjs::runjs("console.log('SERVER DEBUG: Calling discharge tool module');")
     callModule(dischargeTool, 'dischargeTool', pool = pool)
+  } else {
+    shinyjs::runjs("console.log('SERVER DEBUG: NOT calling discharge tool module - packages unavailable');")
   }
 }
