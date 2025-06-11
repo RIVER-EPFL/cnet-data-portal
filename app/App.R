@@ -44,46 +44,19 @@ safe_require <- function(packages) {
   missing_packages <- c()
   loaded_packages <- c()
   
-  # JavaScript console logging function
-  js_log <- function(message) {
-    # This will be executed when shinyjs is available
-    tryCatch({
-      if (exists("runjs", where = "package:shinyjs")) {
-        shinyjs::runjs(paste0("console.log('R DEBUG: ", message, "');"))
-      }
-    }, error = function(e) {
-      # Fallback to R console if shinyjs not available
-      cat("DEBUG:", message, "\n")
-    })
-  }
-  
-  js_log(paste("Starting package check for:", paste(packages, collapse = ", ")))
-  
   for (pkg in packages) {
-    js_log(paste("Checking package:", pkg))
-    
     # First check if package is installed
     if (!requireNamespace(pkg, quietly = TRUE)) {
       missing_packages <- c(missing_packages, pkg)
-      js_log(paste("Package", pkg, "is NOT installed"))
     } else {
-      js_log(paste("Package", pkg, "is installed, attempting to load..."))
       # Package is installed, try to load it
       if (require(pkg, character.only = TRUE, quietly = TRUE)) {
         loaded_packages <- c(loaded_packages, pkg)
-        js_log(paste("Successfully loaded package:", pkg))
       } else {
         missing_packages <- c(missing_packages, pkg)
-        js_log(paste("Package", pkg, "is installed but FAILED to load"))
       }
     }
   }
-  
-  js_log(paste("Loaded packages:", paste(loaded_packages, collapse = ", ")))
-  js_log(paste("Missing packages:", paste(missing_packages, collapse = ", ")))
-  
-  result <- length(missing_packages) == 0
-  js_log(paste("Final result - discharge_packages_available:", result))
   
   if (length(missing_packages) > 0) {
     return(FALSE)
@@ -97,10 +70,6 @@ discharge_packages_available <- safe_require(required_packages)
 
 # Make it explicitly global
 assign("discharge_packages_available", discharge_packages_available, envir = .GlobalEnv)
-
-# Debug: verify global assignment
-cat("DEBUG: discharge_packages_available set to:", discharge_packages_available, "\n")
-cat("DEBUG: Global environment check:", exists("discharge_packages_available", envir = .GlobalEnv), "\n")
 
 library(shiny)
 library(shinyjs)
