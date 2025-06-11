@@ -26,45 +26,20 @@ source('./utils/calculation_functions.R')
 ## Helper function to create discharge tab conditionally #########################
 
 create_discharge_tab <- function(ns) {
-  # More robust check for discharge packages availability
-  debug_exists_local <- exists("discharge_packages_available")
-  debug_exists_global <- exists("discharge_packages_available", envir = .GlobalEnv)
-  debug_value_local <- if (debug_exists_local) discharge_packages_available else "NOT_FOUND_LOCAL"
-  debug_value_global <- if (debug_exists_global) get("discharge_packages_available", envir = .GlobalEnv) else "NOT_FOUND_GLOBAL"
-  
-  # Try to get the value from global environment if not found locally
+  # Check for packages availability with robust global environment check
   packages_available <- FALSE
-  if (debug_exists_global) {
+  if (exists("discharge_packages_available", envir = .GlobalEnv)) {
     packages_available <- get("discharge_packages_available", envir = .GlobalEnv)
-  } else if (debug_exists_local) {
+  } else if (exists("discharge_packages_available")) {
     packages_available <- discharge_packages_available
   }
-  
-  # Create debug info HTML
-  debug_html <- paste(
-    "<div style='background: #f0f0f0; border: 1px solid #ccc; padding: 10px; margin: 10px 0; font-family: monospace; font-size: 12px;'>",
-    "<strong>DEBUG INFO:</strong><br/>",
-    "discharge_packages_available exists locally: ", debug_exists_local, "<br/>",
-    "discharge_packages_available exists globally: ", debug_exists_global, "<br/>",
-    "Local value: ", debug_value_local, "<br/>",
-    "Global value: ", debug_value_global, "<br/>",
-    "Final packages_available: ", packages_available, "<br/>",
-    "Timestamp: ", Sys.time(),
-    "</div>"
-  )
   
   if (packages_available) {
     return(tabPanel(
       # Tab title
       'Discharge',
       # Tab content
-      div(
-        HTML(debug_html),
-        div(style = "background: #d4edda; border: 1px solid #c3e6cb; padding: 10px; margin: 10px 0; border-radius: 5px;",
-            h4("✓ Discharge Tool Available", style = "color: #155724; margin: 0;")
-        ),
-        dischargeToolUI(ns('dischargeTool'))
-      ),
+      dischargeToolUI(ns('dischargeTool')),
       value = ns('dischargeTool')
     ))
   } else {
@@ -73,20 +48,16 @@ create_discharge_tab <- function(ns) {
       'Discharge',
       # Tab content
       div(
-        HTML(debug_html),
-        div(style = "background: #f8d7da; border: 1px solid #f5c6cb; padding: 10px; margin: 10px 0; border-radius: 5px;",
-            h4("✗ Discharge Tool Unavailable", style = "color: #721c24; margin: 0;")
-        ),
-        div(
-          class = 'discharge-unavailable',
-          h4('Discharge Tool Unavailable'),
-          p('The discharge tool requires additional packages that are not installed:'),
-          tags$ul(
-            tags$li('pracma'),
-            tags$li('gridExtra'), 
-            tags$li('signal')
-          ),
-          p('Please install these packages.')
+        class = 'discharge-unavailable',
+        div(style = "background: #f8d7da; border: 1px solid #f5c6cb; padding: 20px; margin: 20px; border-radius: 5px; text-align: center;",
+            h4("⚠️ Discharge Tool Unavailable", style = "color: #721c24; margin-bottom: 15px;"),
+            p("The discharge tool requires additional packages that are not installed:", style = "margin-bottom: 10px;"),
+            tags$ul(style = "display: inline-block; text-align: left;",
+              tags$li('pracma'),
+              tags$li('gridExtra'), 
+              tags$li('signal')
+            ),
+            p("Please contact your system administrator to install these packages.", style = "margin-top: 15px;")
         )
       ),
       value = ns('dischargeTool')
@@ -344,15 +315,7 @@ toolsTab <- function(input, output, session, pool, userRole) {
     packages_available <- discharge_packages_available
   }
   
-  # Debug discharge packages availability
-  shinyjs::runjs(paste0("console.log('SERVER DEBUG: discharge_packages_available exists locally: ", exists("discharge_packages_available"), "');"))
-  shinyjs::runjs(paste0("console.log('SERVER DEBUG: discharge_packages_available exists globally: ", exists("discharge_packages_available", envir = .GlobalEnv), "');"))
-  shinyjs::runjs(paste0("console.log('SERVER DEBUG: final packages_available: ", packages_available, "');"))
-  
   if (packages_available) {
-    shinyjs::runjs("console.log('SERVER DEBUG: Calling discharge tool module');")
     callModule(dischargeTool, 'dischargeTool', pool = pool)
-  } else {
-    shinyjs::runjs("console.log('SERVER DEBUG: NOT calling discharge tool module - packages unavailable');")
   }
 }
