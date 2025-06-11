@@ -42,16 +42,23 @@
 # Function to safely check and load packages
 safe_require <- function(packages) {
   missing_packages <- c()
+  loaded_packages <- c()
+  
   for (pkg in packages) {
-    if (!require(pkg, character.only = TRUE, quietly = TRUE)) {
+    # First check if package is installed
+    if (!requireNamespace(pkg, quietly = TRUE)) {
       missing_packages <- c(missing_packages, pkg)
+    } else {
+      # Package is installed, try to load it
+      if (require(pkg, character.only = TRUE, quietly = TRUE)) {
+        loaded_packages <- c(loaded_packages, pkg)
+      } else {
+        missing_packages <- c(missing_packages, pkg)
+      }
     }
   }
   
   if (length(missing_packages) > 0) {
-    cat("Warning: The following packages are missing:\n")
-    cat(paste(missing_packages, collapse = ", "), "\n")
-    cat("Please rebuild the Docker image to include these packages.\n")
     return(FALSE)
   }
   return(TRUE)
