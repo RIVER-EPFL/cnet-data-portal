@@ -25,7 +25,7 @@ source('./utils/calculation_functions.R')
 
 ## Helper function to create discharge tab conditionally #########################
 
-create_discharge_tab <- function(ns) {
+create_discharge_tab <- function(ns, pool) {
   # Check for packages availability with robust global environment check
   packages_available <- FALSE
   if (exists("discharge_packages_available", envir = .GlobalEnv)) {
@@ -39,7 +39,7 @@ create_discharge_tab <- function(ns) {
       # Tab title
       'Discharge',
       # Tab content
-      dischargeToolUI(ns('dischargeTool')),
+      dischargeToolUI(ns('dischargeTool'), pool),
       value = ns('dischargeTool')
     ))
   } else {
@@ -67,10 +67,11 @@ create_discharge_tab <- function(ns) {
 
 ## Create module UI ###############################################################
 
-toolsTabUI <- function(id) {
+toolsTabUI <- function(id, pool) {
 # Create the UI for the toolsTab module
 # Parameters:
 #  - id: String, the module id
+#  - pool: The pool connection to the database
 # 
 # Returns a tabsetPanel containing the layout
   
@@ -234,7 +235,7 @@ toolsTabUI <- function(id) {
       ),
       value = ns('chlaTool')
     ),
-    create_discharge_tab(ns)
+    create_discharge_tab(ns, pool)
   )
 }
 
