@@ -17,7 +17,8 @@ source('./modules/tools_tab/tools/nutrients_tool.R')
 source('./modules/tools_tab/tools/tss_afdm_tool.R')
 source('./modules/tools_tab/tools/chla_tool.R')
 # Conditionally source discharge tool only if required packages are available
-if (exists("discharge_packages_available") && discharge_packages_available) {
+if ((exists("discharge_packages_available", envir = .GlobalEnv) && get("discharge_packages_available", envir = .GlobalEnv)) ||
+    (exists("discharge_packages_available") && discharge_packages_available)) {
   source('./modules/tools_tab/tools/discharge_tool.R')
 }
 source('./utils/calculation_functions.R')
@@ -25,42 +26,34 @@ source('./utils/calculation_functions.R')
 ## Helper function to create discharge tab conditionally #########################
 
 create_discharge_tab <- function(ns) {
-  # Create debug information
-  debug_exists <- exists("discharge_packages_available")
-  debug_value <- if (debug_exists) discharge_packages_available else "NOT_FOUND"
+  # More robust check for discharge packages availability
+  debug_exists_local <- exists("discharge_packages_available")
+  debug_exists_global <- exists("discharge_packages_available", envir = .GlobalEnv)
+  debug_value_local <- if (debug_exists_local) discharge_packages_available else "NOT_FOUND_LOCAL"
+  debug_value_global <- if (debug_exists_global) get("discharge_packages_available", envir = .GlobalEnv) else "NOT_FOUND_GLOBAL"
+  
+  # Try to get the value from global environment if not found locally
+  packages_available <- FALSE
+  if (debug_exists_global) {
+    packages_available <- get("discharge_packages_available", envir = .GlobalEnv)
+  } else if (debug_exists_local) {
+    packages_available <- discharge_packages_available
+  }
   
   # Create debug info HTML
   debug_html <- paste(
     "<div style='background: #f0f0f0; border: 1px solid #ccc; padding: 10px; margin: 10px 0; font-family: monospace; font-size: 12px;'>",
     "<strong>DEBUG INFO:</strong><br/>",
-    "discharge_packages_available exists: ", debug_exists, "<br/>",
-    "discharge_packages_available value: ", debug_value, "<br/>",
+    "discharge_packages_available exists locally: ", debug_exists_local, "<br/>",
+    "discharge_packages_available exists globally: ", debug_exists_global, "<br/>",
+    "Local value: ", debug_value_local, "<br/>",
+    "Global value: ", debug_value_global, "<br/>",
+    "Final packages_available: ", packages_available, "<br/>",
     "Timestamp: ", Sys.time(),
     "</div>"
   )
   
-  # JavaScript console logging function
-  js_log <- function(message) {
-    tryCatch({
-      if (exists("runjs", where = "package:shinyjs")) {
-        shinyjs::runjs(paste0("console.log('R DEBUG (tools_tab): ", message, "');"))
-      }
-    }, error = function(e) {
-      cat("DEBUG (tools_tab):", message, "\n")
-    })
-  }
-  
-  js_log("create_discharge_tab called")
-  js_log(paste("discharge_packages_available exists:", exists("discharge_packages_available")))
-  
-  if (exists("discharge_packages_available")) {
-    js_log(paste("discharge_packages_available value:", discharge_packages_available))
-  } else {
-    js_log("discharge_packages_available variable does NOT exist")
-  }
-  
-  if (exists("discharge_packages_available") && discharge_packages_available) {
-    js_log("Creating FUNCTIONAL discharge tab")
+  if (packages_available) {
     return(tabPanel(
       # Tab title
       'Discharge',
@@ -75,7 +68,6 @@ create_discharge_tab <- function(ns) {
       value = ns('dischargeTool')
     ))
   } else {
-    js_log("Creating UNAVAILABLE discharge tab")
     return(tabPanel(
       # Tab title
       'Discharge',
@@ -344,13 +336,20 @@ toolsTab <- function(input, output, session, pool, userRole) {
              createNew = FALSE, canUpdate = userRole %in% c('sber', 'admin'))
   
   # Call the discharge tool directly (no database connection needed)
-  # Debug discharge packages availability
-  shinyjs::runjs(paste0("console.log('SERVER DEBUG: discharge_packages_available exists: ", exists("discharge_packages_available"), "');"))
-  if (exists("discharge_packages_available")) {
-    shinyjs::runjs(paste0("console.log('SERVER DEBUG: discharge_packages_available value: ", discharge_packages_available, "');"))
+  # Check for packages availability with robust global environment check
+  packages_available <- FALSE
+  if (exists("discharge_packages_available", envir = .GlobalEnv)) {
+    packages_available <- get("discharge_packages_available", envir = .GlobalEnv)
+  } else if (exists("discharge_packages_available")) {
+    packages_available <- discharge_packages_available
   }
   
-  if (exists("discharge_packages_available") && discharge_packages_available) {
+  # Debug discharge packages availability
+  shinyjs::runjs(paste0("console.log('SERVER DEBUG: discharge_packages_available exists locally: ", exists("discharge_packages_available"), "');"))
+  shinyjs::runjs(paste0("console.log('SERVER DEBUG: discharge_packages_available exists globally: ", exists("discharge_packages_available", envir = .GlobalEnv), "');"))
+  shinyjs::runjs(paste0("console.log('SERVER DEBUG: final packages_available: ", packages_available, "');"))
+  
+  if (packages_available) {
     shinyjs::runjs("console.log('SERVER DEBUG: Calling discharge tool module');")
     callModule(dischargeTool, 'dischargeTool', pool = pool)
   } else {
