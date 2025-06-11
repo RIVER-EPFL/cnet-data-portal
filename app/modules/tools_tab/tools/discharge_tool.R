@@ -12,127 +12,184 @@ dischargeToolUI <- function(id, ...) {
   # Create namespace
   ns <- NS(id)
   
-  # Create layout with improved organization
+  # Create layout with full width usage
   div(
     class = 'discharge-tool tools-layout',
     
-    # Main layout: Left column (panels 1&2) and Right column (panel 3)
-    fluidRow(
-      # Left column: File upload and Parameters
-      column(8,
-        # Panel 1: File upload and preview
-        div(
-          class = 'panel panel-default',
-          style = 'margin-bottom: 25px;',
-          div(
-            class = 'panel-heading',
-            h4('1. Upload Data File', class = 'panel-title')
+    # Panel 1: File upload and preview (full width)
+    div(
+      class = 'panel panel-default',
+      style = 'margin-bottom: 25px;',
+      div(
+        class = 'panel-heading',
+        h4('1. Upload Data File', class = 'panel-title')
+      ),
+      div(
+        class = 'panel-body',
+        fluidRow(
+          column(3,
+            # File upload button
+            fileInput(ns('dataFile'), 'Choose CSV File',
+                     accept = c('.csv'),
+                     buttonLabel = 'Browse...',
+                     placeholder = 'No file selected')
           ),
-          div(
-            class = 'panel-body',
-            # File upload button above the table
-            div(
-              style = 'margin-bottom: 15px;',
-              fileInput(ns('dataFile'), 'Choose CSV File',
-                       accept = c('.csv'),
-                       buttonLabel = 'Browse...',
-                       placeholder = 'No file selected')
-            ),
-            # Data table preview below
+          column(9,
+            # Data table preview
             div(
               class = 'file-preview-container',
               DT::dataTableOutput(ns('filePreview'))
             )
           )
-        ),
-        
-        # Panel 2: Parameters
-        div(
-          class = 'panel panel-default',
-          style = 'margin-bottom: 25px;',
-          div(
-            class = 'panel-heading',
-            h4('2. Configure Parameters', class = 'panel-title')
-          ),
-          div(
-            class = 'panel-body',
-            fluidRow(
-              column(6,
-                div(
-                  class = 'parameter-group',
-                  h5('Rhodamine Parameters', class = 'parameter-group-title'),
-                  div(
-                    class = 'parameter-inputs',
-                    numericInput(ns('initial_mass_rhodamine_wt'), 'Initial Mass Rhodamine (g)', 
-                                value = 3.38019, min = 0, step = 0.01),
-                    numericInput(ns('concentration_rhodamine_wt'), 'Rhodamine Concentration (%)', 
-                                value = 23.83, min = 0, max = 100, step = 0.01),
-                    numericInput(ns('initial_water_temp_degC'), 'Initial Water Temperature (°C)', 
-                                value = 3.3, step = 0.1),
-                    numericInput(ns('n_rhodamine'), 'Temperature Correction Factor', 
-                                value = 0.026, step = 0.001)
-                  )
-                )
-              ),
-              column(6,
-                div(
-                  class = 'parameter-group',
-                  h5('Salt Parameters', class = 'parameter-group-title'),
-                  div(
-                    class = 'parameter-inputs',
-                    numericInput(ns('initial_mass_salt'), 'Initial Mass Salt (g)', 
-                                value = 2000, min = 0, step = 1),
-                    numericInput(ns('slope_conductivity'), 'Conductivity Slope', 
-                                value = 1951.1, min = 0, step = 0.1)
-                  )
-                )
+        )
+      )
+    ),
+    
+    # Panel 2: Parameters (full width)
+    div(
+      class = 'panel panel-default',
+      style = 'margin-bottom: 25px;',
+      div(
+        class = 'panel-heading',
+        h4('2. Configure Parameters', class = 'panel-title')
+      ),
+      div(
+        class = 'panel-body',
+        fluidRow(
+          column(4,
+            div(
+              class = 'parameter-group',
+              h5('Rhodamine Parameters', class = 'parameter-group-title'),
+              div(
+                class = 'parameter-inputs',
+                numericInput(ns('initial_mass_rhodamine_wt'), 'Initial Mass Rhodamine (g)', 
+                            value = 3.38019, min = 0, step = 0.01),
+                numericInput(ns('concentration_rhodamine_wt'), 'Rhodamine Concentration (%)', 
+                            value = 23.83, min = 0, max = 100, step = 0.01),
+                numericInput(ns('initial_water_temp_degC'), 'Initial Water Temperature (°C)', 
+                            value = 3.3, step = 0.1),
+                numericInput(ns('n_rhodamine'), 'Temperature Correction Factor', 
+                            value = 0.026, step = 0.001)
               )
-            ),
-            hr(),
-            fluidRow(
-              column(6,
+            )
+          ),
+          column(4,
+            div(
+              class = 'parameter-group',
+              h5('Salt Parameters', class = 'parameter-group-title'),
+              div(
+                class = 'parameter-inputs',
+                numericInput(ns('initial_mass_salt'), 'Initial Mass Salt (g)', 
+                            value = 2000, min = 0, step = 1),
+                numericInput(ns('slope_conductivity'), 'Conductivity Slope', 
+                            value = 1951.1, min = 0, step = 0.1)
+              )
+            )
+          ),
+          column(4,
+            div(
+              class = 'parameter-group',
+              h5('Additional Parameters', class = 'parameter-group-title'),
+              div(
+                class = 'parameter-inputs',
                 numericInput(ns('distance'), 'Distance (m)', 
-                            value = 79, min = 0, step = 1)
-              ),
-              column(6,
+                            value = 79, min = 0, step = 1),
                 numericInput(ns('T_ref'), 'Reference Temperature (°C)', 
                             value = 25, step = 1)
               )
             )
           )
         )
-      ),
-      
-      # Right column: Calculation and Results
-      column(4,
+      )
+    ),
+    
+    # Panel 3: Calculation and Results (full width)
+    div(
+      class = 'panel panel-default',
+      style = 'margin-bottom: 25px;',
+      div(
+        class = 'panel-heading',
         div(
-          class = 'panel panel-default',
-          style = 'margin-bottom: 25px; margin-left: 15px;',
-          div(
-            class = 'panel-heading',
-            div(
-              class = 'panel-title-with-button',
-              h4('3. Calculate Discharge', class = 'panel-title', style = 'margin-bottom: 10px;'),
-              actionButton(ns('calculate'), 'Calculate Discharge', 
-                          class = 'btn btn-primary btn-lg btn-block',
-                          style = 'margin-top: 10px;')
-            )
-          ),
-          div(
-            class = 'panel-body',
-            div(
-              class = 'results-container',
-              # Results text
+          class = 'panel-title-with-button',
+          h4('3. Calculate Discharge', class = 'panel-title', style = 'display: inline-block; margin: 0;'),
+          actionButton(ns('calculate'), 'Calculate Discharge', 
+                      class = 'btn btn-primary btn-lg',
+                      style = 'float: right;')
+        )
+      ),
+      div(
+        class = 'panel-body',
+        div(
+          class = 'results-container',
+          fluidRow(
+            column(6,
               div(
                 class = 'results-text',
                 h5('Calculation Results'),
                 verbatimTextOutput(ns('results'))
-              ),
-              # Plot without title
+              )
+            ),
+            column(6,
               div(
                 class = 'results-plot',
                 plotOutput(ns('plots'), height = '400px')
               )
+            )
+          )
+        )
+      )
+    ),
+    
+    # Panel 4: Database Update for Q_Ls parameter
+    div(
+      class = 'panel panel-default',
+      style = 'margin-bottom: 25px;',
+      div(
+        class = 'panel-heading',
+        h4('4. Update Database (Q_Ls Parameter)', class = 'panel-title')
+      ),
+      div(
+        class = 'panel-body',
+        fluidRow(
+          column(3,
+            selectInput(ns('station'), 'Station',
+                       choices = c('Select station...' = ''),
+                       width = '100%')
+          ),
+          column(3,
+            dateInput(ns('date'), 'Date',
+                     value = Sys.Date(),
+                     width = '100%')
+          ),
+          column(3,
+            numericInput(ns('q_ls'), 'Q_Ls (L/s)',
+                        value = NULL,
+                        min = 0,
+                        step = 0.001,
+                        width = '100%')
+          ),
+          column(3,
+            div(
+              style = 'margin-top: 25px;',
+              div(
+                class = 'btn-group',
+                style = 'width: 100%;',
+                actionButton(ns('check'), 'Check', 
+                           class = 'btn btn-default',
+                           style = 'width: 48%; margin-right: 4%;'),
+                actionButton(ns('update'), 'Update', 
+                           class = 'btn btn-success',
+                           style = 'width: 48%;')
+              )
+            )
+          )
+        ),
+        fluidRow(
+          column(12,
+            div(
+              class = 'database-feedback',
+              style = 'margin-top: 15px;',
+              uiOutput(ns('dbFeedback'))
             )
           )
         )
@@ -160,7 +217,7 @@ dischargeToolUI <- function(id, ...) {
         background-color: #f8f9fa;
         padding: 15px;
         border-radius: 5px;
-        margin-bottom: 10px;
+        height: 100%;
       }
       
       .discharge-tool .parameter-group-title {
@@ -186,8 +243,7 @@ dischargeToolUI <- function(id, ...) {
         background-color: #f8f9fa;
         padding: 15px;
         border-radius: 5px;
-        margin-bottom: 15px;
-        max-height: 200px;
+        max-height: 400px;
         overflow-y: auto;
       }
       
@@ -195,10 +251,6 @@ dischargeToolUI <- function(id, ...) {
         background-color: #f8f9fa;
         padding: 10px;
         border-radius: 5px;
-      }
-      
-      .discharge-tool .btn-block {
-        width: 100%;
       }
       
       .discharge-tool .btn-lg {
@@ -210,15 +262,20 @@ dischargeToolUI <- function(id, ...) {
         padding: 20px;
       }
       
-      /* Add spacing between panels */
-      .discharge-tool .row {
-        margin-left: -10px;
-        margin-right: -10px;
+      .discharge-tool .panel-title-with-button {
+        width: 100%;
+        overflow: hidden;
       }
       
-      .discharge-tool .row > [class*='col-'] {
-        padding-left: 10px;
-        padding-right: 10px;
+      .discharge-tool .database-feedback {
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-radius: 5px;
+        min-height: 40px;
+      }
+      
+      .discharge-tool .btn-group .btn {
+        border-radius: 4px !important;
       }
     "))
   )
@@ -239,7 +296,9 @@ dischargeTool <- function(input, output, session, pool, site, datetime, ...) {
   values <- reactiveValues(
     data = NULL,
     results = NULL,
-    plots = NULL
+    plots = NULL,
+    checked = FALSE,
+    dbError = NULL
   )
   
   ## File upload handling #########################################################
@@ -467,6 +526,131 @@ dischargeTool <- function(input, output, session, pool, site, datetime, ...) {
       plot_list$rhodamine
     } else if (!is.null(plot_list$salt)) {
       plot_list$salt
+    }
+  })
+  
+  ## Load stations for dropdown ###################################################
+  
+  # Get stations from database
+  stations <- reactive({
+    req(pool)
+    tryCatch({
+      getRows(pool, 'stations', columns = c('name', 'full_name')) %>%
+        arrange(name) %>%
+        mutate(display = paste0(name, " - ", full_name))
+    }, error = function(e) {
+      data.frame(name = character(0), full_name = character(0), display = character(0))
+    })
+  })
+  
+  # Update station choices
+  observe({
+    station_data <- stations()
+    if (nrow(station_data) > 0) {
+      choices <- setNames(station_data$name, station_data$display)
+      choices <- c('Select station...' = '', choices)
+      updateSelectInput(session, 'station', choices = choices)
+    }
+  })
+  
+  ## Database Check and Update Logic ##############################################
+  
+  # Check button logic
+  observeEvent(input$check, {
+    req(input$station, input$date)
+    
+    # Reset checked status and errors
+    values$checked <- FALSE
+    values$dbError <- NULL
+    
+    # Validate inputs
+    if (input$station == '') {
+      values$dbError <- "Please select a station."
+      return()
+    }
+    
+    if (is.null(input$q_ls) || is.na(input$q_ls)) {
+      values$dbError <- "Please enter a Q_Ls value."
+      return()
+    }
+    
+    if (input$q_ls < 0) {
+      values$dbError <- "Q_Ls value must be positive."
+      return()
+    }
+    
+    # Check if record exists
+    tryCatch({
+      existing_record <- getRows(pool, 'data', 
+                                station == input$station & DATE_reading == as.character(input$date),
+                                columns = c('id', 'Q_Ls'))
+      
+      if (nrow(existing_record) == 0) {
+        values$dbError <- paste("No data record found for station", input$station, "on", input$date)
+      } else if (nrow(existing_record) > 1) {
+        values$dbError <- paste("Multiple records found for station", input$station, "on", input$date, 
+                               "- please contact administrator")
+      } else {
+        # Record found, check is successful
+        values$checked <- TRUE
+        current_q_ls <- if (is.na(existing_record$Q_Ls)) "NULL" else existing_record$Q_Ls
+        values$dbError <- paste("✓ Check successful! Record ID:", existing_record$id, 
+                               "| Current Q_Ls:", current_q_ls,
+                               "| New Q_Ls:", input$q_ls)
+      }
+    }, error = function(e) {
+      values$dbError <- paste("Database error:", e$message)
+    })
+  })
+  
+  # Update button logic
+  observeEvent(input$update, {
+    req(values$checked, input$station, input$date, input$q_ls)
+    
+    if (!values$checked) {
+      values$dbError <- "Please check the record first before updating."
+      return()
+    }
+    
+    # Get the record to update
+    tryCatch({
+      existing_record <- getRows(pool, 'data', 
+                                station == input$station & DATE_reading == as.character(input$date),
+                                columns = c('id'))
+      
+      if (nrow(existing_record) == 1) {
+        # Update the record
+        result <- updateData(pool, existing_record$id, c('Q_Ls'), list(input$q_ls))
+        
+        if (result == '') {
+          values$dbError <- paste("✅ Successfully updated Q_Ls to", input$q_ls, "L/s for station", 
+                                 input$station, "on", input$date)
+          values$checked <- FALSE  # Reset check status after successful update
+        } else {
+          values$dbError <- paste("Update failed:", result)
+        }
+      } else {
+        values$dbError <- "Record not found for update. Please check again."
+      }
+    }, error = function(e) {
+      values$dbError <- paste("Update error:", e$message)
+    })
+  })
+  
+  # Render database feedback
+  output$dbFeedback <- renderUI({
+    if (!is.null(values$dbError)) {
+      if (grepl("^✓|^✅", values$dbError)) {
+        # Success message
+        div(style = "color: #155724; background-color: #d4edda; border: 1px solid #c3e6cb; padding: 10px; border-radius: 5px;",
+            icon("check-circle"), " ", values$dbError)
+      } else {
+        # Error message
+        div(style = "color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 10px; border-radius: 5px;",
+            icon("exclamation-triangle"), " ", values$dbError)
+      }
+    } else {
+      div(style = "color: #6c757d; font-style: italic;", "Select station, date, and Q_Ls value, then click Check to validate.")
     }
   })
   
