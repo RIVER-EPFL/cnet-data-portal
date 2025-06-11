@@ -89,6 +89,9 @@ library(purrr)
 library(sodium)
 library(bigleaf)
 library(RMySQL)
+library(pracma)
+library(gridExtra)
+library(signal)
 
 # Load discharge-specific packages only if available
 if (discharge_packages_available) {
