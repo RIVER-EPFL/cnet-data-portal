@@ -16,45 +16,40 @@ dischargeToolUI <- function(id, ...) {
   div(
     class = 'discharge-tool tools-layout',
     
-    # Top section: File upload and preview
-    div(
-      class = 'row',
-      div(
-        class = 'col-md-12',
+    # Main layout: Left column (panels 1&2) and Right column (panel 3)
+    fluidRow(
+      # Left column: File upload and Parameters
+      column(8,
+        # Panel 1: File upload and preview
         div(
           class = 'panel panel-default',
+          style = 'margin-bottom: 25px;',
           div(
             class = 'panel-heading',
             h4('1. Upload Data File', class = 'panel-title')
           ),
           div(
             class = 'panel-body',
-            fluidRow(
-              column(4,
-                fileInput(ns('dataFile'), 'Choose CSV File',
-                         accept = c('.csv'),
-                         buttonLabel = 'Browse...',
-                         placeholder = 'No file selected')
-              ),
-              column(8,
-                div(
-                  class = 'file-preview-container',
-                  DT::dataTableOutput(ns('filePreview'))
-                )
-              )
+            # File upload button above the table
+            div(
+              style = 'margin-bottom: 15px;',
+              fileInput(ns('dataFile'), 'Choose CSV File',
+                       accept = c('.csv'),
+                       buttonLabel = 'Browse...',
+                       placeholder = 'No file selected')
+            ),
+            # Data table preview below
+            div(
+              class = 'file-preview-container',
+              DT::dataTableOutput(ns('filePreview'))
             )
           )
-        )
-      )
-    ),
-    
-    # Middle section: Parameters
-    div(
-      class = 'row',
-      div(
-        class = 'col-md-12',
+        ),
+        
+        # Panel 2: Parameters
         div(
           class = 'panel panel-default',
+          style = 'margin-bottom: 25px;',
           div(
             class = 'panel-heading',
             h4('2. Configure Parameters', class = 'panel-title')
@@ -106,45 +101,37 @@ dischargeToolUI <- function(id, ...) {
             )
           )
         )
-      )
-    ),
-    
-    # Bottom section: Calculation and Results
-    div(
-      class = 'row',
-      div(
-        class = 'col-md-12',
+      ),
+      
+      # Right column: Calculation and Results
+      column(4,
         div(
           class = 'panel panel-default',
+          style = 'margin-bottom: 25px; margin-left: 15px;',
           div(
             class = 'panel-heading',
             div(
               class = 'panel-title-with-button',
-              h4('3. Calculate Discharge', class = 'panel-title', style = 'display: inline-block; margin: 0;'),
+              h4('3. Calculate Discharge', class = 'panel-title', style = 'margin-bottom: 10px;'),
               actionButton(ns('calculate'), 'Calculate Discharge', 
-                          class = 'btn btn-primary btn-lg',
-                          style = 'float: right; margin-top: -5px;')
+                          class = 'btn btn-primary btn-lg btn-block',
+                          style = 'margin-top: 10px;')
             )
           ),
           div(
             class = 'panel-body',
             div(
               class = 'results-container',
-              fluidRow(
-                column(6,
-                  div(
-                    class = 'results-text',
-                    h5('Calculation Results'),
-                    verbatimTextOutput(ns('results'))
-                  )
-                ),
-                column(6,
-                  div(
-                    class = 'results-plot',
-                    h5('Concentration Curves'),
-                    plotOutput(ns('plots'), height = '400px')
-                  )
-                )
+              # Results text
+              div(
+                class = 'results-text',
+                h5('Calculation Results'),
+                verbatimTextOutput(ns('results'))
+              ),
+              # Plot without title
+              div(
+                class = 'results-plot',
+                plotOutput(ns('plots'), height = '400px')
               )
             )
           )
@@ -155,8 +142,8 @@ dischargeToolUI <- function(id, ...) {
     # Add custom CSS for better styling
     tags$style(HTML("
       .discharge-tool .panel {
-        margin-bottom: 20px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border: 1px solid #ddd;
       }
       
       .discharge-tool .panel-heading {
@@ -187,28 +174,51 @@ dischargeToolUI <- function(id, ...) {
       .discharge-tool .file-preview-container {
         max-height: 300px;
         overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
       }
       
       .discharge-tool .results-container {
-        margin-top: 15px;
+        margin-top: 10px;
       }
       
-      .discharge-tool .results-text,
-      .discharge-tool .results-plot {
+      .discharge-tool .results-text {
         background-color: #f8f9fa;
         padding: 15px;
         border-radius: 5px;
-        height: 450px;
+        margin-bottom: 15px;
+        max-height: 200px;
+        overflow-y: auto;
       }
       
-      .discharge-tool .panel-title-with-button {
+      .discharge-tool .results-plot {
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-radius: 5px;
+      }
+      
+      .discharge-tool .btn-block {
         width: 100%;
-        overflow: hidden;
       }
       
       .discharge-tool .btn-lg {
         font-size: 16px;
-        padding: 10px 20px;
+        padding: 12px 20px;
+      }
+      
+      .discharge-tool .panel-body {
+        padding: 20px;
+      }
+      
+      /* Add spacing between panels */
+      .discharge-tool .row {
+        margin-left: -10px;
+        margin-right: -10px;
+      }
+      
+      .discharge-tool .row > [class*='col-'] {
+        padding-left: 10px;
+        padding-right: 10px;
       }
     "))
   )
@@ -351,8 +361,7 @@ dischargeTool <- function(input, output, session, pool, site, datetime, ...) {
         plots$rhodamine <- ggplot(data, aes(x = time, y = ppb_smoothed)) +
           geom_line(color = "blue", size = 1) +
           geom_area(fill = "blue", alpha = 0.2) +
-          labs(title = "Temperature-adjusted Rhodamine Concentration",
-               x = "Time", y = "Concentration (ppb)") +
+          labs(x = "Time", y = "Concentration (ppb)") +
           theme_minimal()
       }
       
@@ -395,8 +404,7 @@ dischargeTool <- function(input, output, session, pool, site, datetime, ...) {
         plots$salt <- ggplot(data, aes(x = time, y = salt_concentration_smoothed)) +
           geom_line(color = "red", size = 1) +
           geom_area(fill = "red", alpha = 0.2) +
-          labs(title = "Salt Concentration",
-               x = "Time", y = "Concentration (g/L)") +
+          labs(x = "Time", y = "Concentration (g/L)") +
           theme_minimal()
       }
       
