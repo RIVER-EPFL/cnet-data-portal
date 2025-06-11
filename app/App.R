@@ -95,6 +95,13 @@ safe_require <- function(packages) {
 required_packages <- c("pracma", "gridExtra", "signal")
 discharge_packages_available <- safe_require(required_packages)
 
+# Make it explicitly global
+assign("discharge_packages_available", discharge_packages_available, envir = .GlobalEnv)
+
+# Debug: verify global assignment
+cat("DEBUG: discharge_packages_available set to:", discharge_packages_available, "\n")
+cat("DEBUG: Global environment check:", exists("discharge_packages_available", envir = .GlobalEnv), "\n")
+
 library(shiny)
 library(shinyjs)
 library(shinyWidgets)
@@ -123,16 +130,8 @@ library(purrr)
 library(sodium)
 library(bigleaf)
 library(RMySQL)
-library(pracma)
-library(gridExtra)
-library(signal)
 
-# Load discharge-specific packages only if available
-if (discharge_packages_available) {
-  library(pracma)
-  library(gridExtra)
-  library(signal)
-}
+# Discharge packages are already loaded by safe_require if available
 
 # Set locale to utf-8
 Sys.setlocale('LC_ALL', 'en_US.UTF-8')
@@ -142,7 +141,6 @@ source('./secrets.R')
 
 ## Load helper functions ##########################################################
 source('./utils/helper_functions.R')
-
 
 
 ## Development environment specific ##########################################################
