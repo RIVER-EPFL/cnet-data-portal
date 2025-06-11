@@ -47,7 +47,7 @@ create_discharge_tab <- function(ns) {
           tags$li('gridExtra'), 
           tags$li('signal')
         ),
-        p('Please contact your system administrator to install these packages.')
+        p('Please install these packages.')
       ),
       value = ns('dischargeTool')
     ))
