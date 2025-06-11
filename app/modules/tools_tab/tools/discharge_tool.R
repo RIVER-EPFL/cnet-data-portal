@@ -214,9 +214,20 @@ dischargeToolUI <- function(id, pool, ...) {
     
     # Add custom CSS for better styling
     tags$style(HTML("
+      .discharge-tool {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+      }
+      
       .discharge-tool .panel {
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         border: 1px solid #ddd;
+        display: block;
+        width: 100%;
+        clear: both;
+        margin-bottom: 30px;
+        flex-shrink: 0;
       }
       
       .discharge-tool .panel-heading {
@@ -293,6 +304,25 @@ dischargeToolUI <- function(id, pool, ...) {
       .discharge-tool .btn-group .btn {
         border-radius: 4px !important;
       }
+      
+      /* Ensure no floating or side-by-side panels */
+      .discharge-tool .row {
+        margin-left: 0;
+        margin-right: 0;
+      }
+      
+      .discharge-tool .col-md-6,
+      .discharge-tool .col-md-4,
+      .discharge-tool .col-md-8 {
+        float: none !important;
+      }
+    ")),
+    
+    # Add JavaScript for console debugging
+    tags$script(HTML("
+      Shiny.addCustomMessageHandler('console', function(message) {
+        console.log('Discharge Tool Debug:', message.message);
+      });
     "))
   )
 }
@@ -554,21 +584,33 @@ dischargeTool <- function(input, output, session, pool, site, datetime, ...) {
   observeEvent(input$site, {
     req(input$site != '')
     
+    # Add JavaScript debug message
+    session$sendCustomMessage("console", list(message = paste("Site changed to:", input$site)))
+    
     # Get available dates for the selected station
     tryCatch({
+      session$sendCustomMessage("console", list(message = "Querying database for dates..."))
+      
       dates <- getRows(pool, 'data', 
                       station == input$site,
                       columns = 'DATE_reading') %>%
         distinct(DATE_reading) %>%
         arrange(desc(DATE_reading))
       
+      session$sendCustomMessage("console", list(message = paste("Found", nrow(dates), "dates for station", input$site)))
+      
       if (nrow(dates) > 0) {
-        date_choices <- c('Choose a date ...' = '', parseOptions(dates, 'DATE_reading'))
+        # parseOptions returns a simple vector, so we create the named list properly
+        date_options <- parseOptions(dates, 'DATE_reading')
+        date_choices <- c('Choose a date ...' = '', setNames(date_options, date_options))
+        session$sendCustomMessage("console", list(message = paste("Date choices:", paste(date_options, collapse = ", "))))
         updateSelectInput(session, 'date', choices = date_choices)
       } else {
+        session$sendCustomMessage("console", list(message = "No dates found for station"))
         updateSelectInput(session, 'date', choices = c('No dates available' = ''))
       }
     }, error = function(e) {
+      session$sendCustomMessage("console", list(message = paste("Error loading dates:", e$message)))
       updateSelectInput(session, 'date', choices = c('Error loading dates' = ''))
     })
   })
