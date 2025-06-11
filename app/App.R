@@ -344,7 +344,7 @@ server <- function(input, output, session) {
         tabPanel(
           # Create a tab title with an icon
           tags$span(icon('tools'),tags$span('Tools', class = 'navbar-menu-name')),
-          toolsTabUI('toolsTab'),
+          toolsTabUI('toolsTab', pool),
           value = 'toolsTab'
         )
       )
