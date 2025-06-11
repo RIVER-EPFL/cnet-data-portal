@@ -95,6 +95,7 @@ toolsTabUI <- function(id, pool) {
       ),
       value = ns('fieldDataTool')
     ),
+    create_discharge_tab(ns, pool),
     tabPanel(
       # Tab title
       'DOC',
@@ -234,8 +235,7 @@ toolsTabUI <- function(id, pool) {
         )
       ),
       value = ns('chlaTool')
-    ),
-    create_discharge_tab(ns, pool)
+    )
   )
 }
 
