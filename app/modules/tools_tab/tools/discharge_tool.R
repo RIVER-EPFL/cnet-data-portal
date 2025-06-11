@@ -591,8 +591,11 @@ dischargeTool <- function(input, output, session, pool, site, datetime, ...) {
     tryCatch({
       session$sendCustomMessage("console", list(message = "Querying database for dates..."))
       
+      # Store the site value in a variable for use in getRows
+      selected_site <- input$site
+      
       dates <- getRows(pool, 'data', 
-                      station == input$site,
+                      station == selected_site,
                       columns = 'DATE_reading') %>%
         distinct(DATE_reading) %>%
         arrange(desc(DATE_reading))
@@ -643,8 +646,13 @@ dischargeTool <- function(input, output, session, pool, site, datetime, ...) {
     
     # Check if record exists
     tryCatch({
+      # Store reactive values in variables
+      selected_site <- input$site
+      selected_date <- as.character(input$date)
+      
       existing_record <- getRows(pool, 'data', 
-                                station == input$site & DATE_reading == as.character(input$date),
+                                station == selected_site, 
+                                DATE_reading == selected_date,
                                 columns = c('id', 'Q_Ls'))
       
       if (nrow(existing_record) == 0) {
@@ -676,8 +684,13 @@ dischargeTool <- function(input, output, session, pool, site, datetime, ...) {
     
     # Get the record to update
     tryCatch({
+      # Store reactive values in variables
+      selected_site <- input$site
+      selected_date <- as.character(input$date)
+      
       existing_record <- getRows(pool, 'data', 
-                                station == input$site & DATE_reading == as.character(input$date),
+                                station == selected_site,
+                                DATE_reading == selected_date,
                                 columns = c('id'))
       
       if (nrow(existing_record) == 1) {
