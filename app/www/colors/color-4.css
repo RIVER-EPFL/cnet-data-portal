@@ -1,0 +1,555 @@
+/*! ------------------------------------------------
+ * Project Name: Ramio - Clean Coming Soon and Landing Page Template
+ * Project Description: Ramio - awesome coming soon template to kick-start your project
+ * Tags: Ramio, coming soon, under construction, template, coming soon page, html5, css3
+ * Version: 2.0.3
+ * Build Date: April 2018
+ * Last Update: December 2024
+ * This product is available exclusively on Themeforest
+ * Author: mix_design
+ * Author URI: https://themeforest.net/user/mix_design
+ * File name: color-1.css
+ * ------------------------------------------------
+ *
+ * ------------------------------------------------
+ * Table of Contents
+ * ------------------------------------------------
+ *  3. Base Colors
+ *  6. Typography
+ *  7. Buttons & Triggers
+ *  8. Forms and Form Reply Groups
+ *  9. Main Section
+ *  10. Menu
+ *  11. Socials
+ *  12. Countdown
+ *  13. Content Sections
+ *  14. Custom Scroll
+ *  17. Blockquote
+ *  18. Team
+ *  19. Gallery
+ *  20. Contact Data
+ *  21. Google Map
+ *  22. Popup Forms
+ * ------------------------------------------------
+ * Table of Contents End
+ * ------------------------------------------------ */
+/* ------------------------------------------------*/
+/* Base Colors Start */
+/* ------------------------------------------------*/
+::-moz-selection {
+  background-color: rgb(60.6, 60.6, 60.6);
+  color: #38f6b4;
+  text-shadow: none;
+}
+::selection {
+  background-color: rgb(60.6, 60.6, 60.6);
+  color: #38f6b4;
+  text-shadow: none;
+}
+
+html {
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+}
+
+body {
+  background-color: #0c0c0c;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+a {
+  color: #ffffff;
+}
+
+/* ------------------------------------------------*/
+/* Base Colors End */
+/* ------------------------------------------------*/
+/* ------------------------------------------------*/
+/* Typography Colors Start */
+/* ------------------------------------------------*/
+h1 {
+  color: #262626;
+}
+h1 span {
+  color: #38f6b4;
+}
+h1.light-text {
+  color: #ffffff;
+}
+
+h2 {
+  color: #ffffff;
+}
+
+h3 {
+  color: #ffffff;
+}
+h3 small {
+  color: #aaa;
+}
+
+h4 {
+  color: #ffffff;
+}
+h4 small {
+  color: #ffffff;
+}
+
+.section-title span {
+  color: #ffffff;
+}
+.section-title span em {
+  color: #ffffff;
+}
+.section-title p {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+p {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.contact-data__item .material-icons {
+  color: #38f6b4;
+}
+.contact-data__item p {
+  color: rgba(255, 255, 255, 0.8);
+}
+.contact-data__item a {
+  color: #ffffff;
+}
+.contact-data__item a::before {
+  background-color: #38f6b4;
+}
+.no-touch .contact-data__item a:hover {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+strong {
+  color: #ffffff;
+}
+
+.txt-light {
+  color: #ffffff;
+}
+
+.txt-light-transparent {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.txt-accent-color {
+  color: #38f6b4;
+}
+
+/* ------------------------------------------------*/
+/* Typography Colors End */
+/* ------------------------------------------------*/
+/* ------------------------------------------------*/
+/* Buttons & Triggers Colors Start */
+/* ------------------------------------------------*/
+.button-dark {
+  color: #ffffff;
+  background-color: #0c0c0c;
+  -webkit-box-shadow: none;
+     -moz-box-shadow: none;
+          box-shadow: none;
+}
+.button-dark::before, .button-dark::after {
+  background-color: #ffffff;
+}
+.no-touch .button-dark:hover {
+  color: #ffffff;
+  background-color: #0c0c0c;
+}
+
+.button-dark-outline {
+  border: 2px solid #303030;
+  color: #303030;
+}
+.button-dark-outline::before, .button-dark-outline::after {
+  background-color: #303030;
+}
+.no-touch .button-dark-outline:hover {
+  color: #303030;
+}
+
+.button-light {
+  color: #0c0c0c;
+  background-color: #ffffff;
+}
+.button-light::before, .button-light::after {
+  background-color: #0c0c0c;
+}
+.no-touch .button-light:hover {
+  color: #0c0c0c;
+  background-color: #ffffff;
+}
+
+.button-light-outline {
+  background-color: transparent;
+  border: 2px solid #ffffff;
+  color: #ffffff;
+}
+.button-light-outline::before, .button-light-outline::after {
+  background-color: #ffffff;
+}
+.no-touch .button-light-outline:hover {
+  color: #ffffff;
+}
+
+.section-close {
+  color: #38f6b4;
+  border: 2px solid #38f6b4;
+  -webkit-transition: all 0.3s;
+  -o-transition: all 0.3s;
+  -moz-transition: all 0.3s;
+  transition: all 0.3s;
+}
+.section-close.light {
+  color: rgba(255, 255, 255, 0.6);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+.no-touch .section-close:hover {
+  color: rgb(42.56, 186.96, 136.8);
+  border: 2px solid rgb(42.56, 186.96, 136.8);
+}
+.no-touch .section-close:hover.light {
+  color: rgba(255, 255, 255, 0.6);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+/* ------------------------------------------------*/
+/* Buttons & Triggers Colors End */
+/* ------------------------------------------------*/
+/* ------------------------------------------------*/
+/* Forms & Form Reply Groups Colors Start */
+/* ------------------------------------------------*/
+.form-dark ::-webkit-input-placeholder {
+  color: #303030;
+}
+.form-dark :-moz-placeholder {
+  color: #303030;
+}
+.form-dark ::-moz-placeholder {
+  color: #303030;
+}
+.form-dark :-ms-input-placeholder {
+  color: #303030;
+}
+.form-dark input:focus:required:invalid,
+.form-dark textarea:focus:required:invalid {
+  color: #303030;
+}
+.form-dark input:required:valid,
+.form-dark textarea:required:valid {
+  color: #303030;
+}
+.form-dark input, .form-dark textarea {
+  border-bottom: 1px solid #303030;
+  color: #303030;
+}
+.form-dark input:focus, .form-dark textarea:focus {
+  border-bottom: 1px solid #38f6b4;
+}
+.form-dark .inputs-description {
+  color: #aaa;
+}
+
+.form-light ::-webkit-input-placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+.form-light :-moz-placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+.form-light ::-moz-placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+.form-light :-ms-input-placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+.form-light input:focus:required:invalid,
+.form-light textarea:focus:required:invalid {
+  color: #ffffff;
+}
+.form-light input:required:valid,
+.form-light textarea:required:valid {
+  color: #ffffff;
+}
+.form-light input, .form-light textarea {
+  border-bottom: 1px solid #ffffff;
+  color: #d8d8d8;
+}
+.form-light input:focus, .form-light textarea:focus {
+  border-bottom: 1px solid #38f6b4;
+}
+.form-light .inputs-description {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* ------------------------------------------------*/
+/* Forms & Form Reply Groups Colors End */
+/* ------------------------------------------------*/
+/* ------------------------------------------------*/
+/* Main Section Colors Start */
+/* ------------------------------------------------*/
+.main {
+  background-color: #0c0c0c;
+}
+
+.main__intro {
+  background-color: #0c0c0c;
+}
+.main__intro::before {
+  background-color: rgb(8.4, 8.4, 8.4);
+}
+
+.intro__content {
+  background-color: #0c0c0c;
+}
+
+.main__media::before {
+  background-color: rgb(8.4, 8.4, 8.4);
+}
+
+/* ------------------------------------------------*/
+/* Main Section Colors End */
+/* ------------------------------------------------*/
+/* ------------------------------------------------*/
+/* Menu Colors Start */
+/* ------------------------------------------------*/
+.intro__menu ul li::after {
+  background: #38f6b4;
+}
+.no-touch .intro__menu ul li:hover a {
+  color: #ffffff;
+}
+.intro__menu ul li a {
+  color: #ffffff;
+}
+
+/* ------------------------------------------------*/
+/* Menu Colors End */
+/* ------------------------------------------------*/
+/* ------------------------------------------------*/
+/* Socials Colors Start */
+/* ------------------------------------------------*/
+.intro__socials ul li a {
+  color: #ffffff;
+}
+.no-touch .intro__socials ul li:hover a {
+  color: #38f6b4;
+}
+
+/* ------------------------------------------------*/
+/* Socials Colors End */
+/* ------------------------------------------------*/
+/* ------------------------------------------------*/
+/* Countdown Colors Start */
+/* ------------------------------------------------*/
+.media__countdown #countdown {
+  color: #ffffff;
+}
+.media__countdown .help-text {
+  color: #ffffff;
+}
+
+/* ------------------------------------------------*/
+/* Countdown Colors End */
+/* ------------------------------------------------*/
+/* ------------------------------------------------*/
+/* Content Sections Colors Start */
+/* ------------------------------------------------*/
+.scroll {
+  background-color: rgb(21.72, 21.72, 21.72);
+}
+
+.blocks {
+  background-color: rgb(21.72, 21.72, 21.72);
+}
+
+/* ------------------------------------------------*/
+/* Content Sections Colors End */
+/* ------------------------------------------------*/
+/* ------------------------------------------------*/
+/* Custom Scroll Colors Start */
+/* ------------------------------------------------*/
+.mCSB_draggerContainer {
+  background: rgb(46.02, 46.02, 46.02);
+}
+
+.mCSB_scrollTools .mCSB_draggerRail {
+  background-color: rgb(46.02, 46.02, 46.02);
+}
+
+.mCSB_scrollTools .mCSB_dragger .mCSB_dragger_bar {
+  background-color: rgb(39.2, 172.2, 126);
+}
+
+.mCSB_scrollTools .mCSB_dragger:hover .mCSB_dragger_bar {
+  background-color: rgb(39.2, 172.2, 126);
+}
+
+.mCSB_scrollTools .mCSB_dragger:active .mCSB_dragger_bar,
+.mCSB_scrollTools .mCSB_dragger.mCSB_dragger_onDrag .mCSB_dragger_bar {
+  background-color: rgb(39.2, 172.2, 126);
+}
+
+/* ------------------------------------------------*/
+/* Custom Scroll Colors End */
+/* ------------------------------------------------*/
+/* ------------------------------------------------*/
+/* Blockquote Colors Start */
+/* ------------------------------------------------*/
+.blockquote__content blockquote p {
+  color: #ffffff;
+}
+.blockquote__content blockquote cite {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.blockquote__icon {
+  color: rgba(170, 170, 170, 0.2);
+}
+
+/* ------------------------------------------------*/
+/* Blockquote Colors End */
+/* ------------------------------------------------*/
+/* ------------------------------------------------*/
+/* Team Colors Start */
+/* ------------------------------------------------*/
+.team__socials li a {
+  color: #aaa;
+}
+.no-touch .team__socials li:hover a {
+  color: #38f6b4;
+}
+
+/* ------------------------------------------------*/
+/* Team Colors End */
+/* ------------------------------------------------*/
+/* ------------------------------------------------*/
+/* Gallery Colors Start */
+/* ------------------------------------------------*/
+.my-gallery__item::after {
+  background-color: #ffffff;
+  background: -webkit-gradient(linear, left top, left bottom, from(rgba(255, 255, 255, 0)), color-stop(50%, rgba(255, 255, 255, 0)), to(rgba(255, 255, 255, 0.6)));
+  background: -moz-linear-gradient(top, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0.6) 100%);
+  background: -o-linear-gradient(top, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0.6) 100%);
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0.6) 100%);
+}
+.my-gallery__item:nth-of-type(2)::after {
+  background-color: #38f6b4;
+  background: -webkit-gradient(linear, left top, left bottom, from(rgba(56, 246, 180, 0)), color-stop(50%, rgba(56, 246, 180, 0)), to(rgba(56, 246, 180, 0.6)));
+  background: -moz-linear-gradient(top, rgba(56, 246, 180, 0) 0%, rgba(56, 246, 180, 0) 50%, rgba(56, 246, 180, 0.6) 100%);
+  background: -o-linear-gradient(top, rgba(56, 246, 180, 0) 0%, rgba(56, 246, 180, 0) 50%, rgba(56, 246, 180, 0.6) 100%);
+  background: linear-gradient(to bottom, rgba(56, 246, 180, 0) 0%, rgba(56, 246, 180, 0) 50%, rgba(56, 246, 180, 0.6) 100%);
+}
+.my-gallery__item:nth-of-type(3)::after {
+  background-color: #0c0c0c;
+  background: -webkit-gradient(linear, left top, left bottom, from(rgba(12, 12, 12, 0)), color-stop(50%, rgba(12, 12, 12, 0)), to(rgba(12, 12, 12, 0.6)));
+  background: -moz-linear-gradient(top, rgba(12, 12, 12, 0) 0%, rgba(12, 12, 12, 0) 50%, rgba(12, 12, 12, 0.6) 100%);
+  background: -o-linear-gradient(top, rgba(12, 12, 12, 0) 0%, rgba(12, 12, 12, 0) 50%, rgba(12, 12, 12, 0.6) 100%);
+  background: linear-gradient(to bottom, rgba(12, 12, 12, 0) 0%, rgba(12, 12, 12, 0) 50%, rgba(12, 12, 12, 0.6) 100%);
+}
+.my-gallery__item figcaption h4 {
+  color: #303030;
+}
+.my-gallery__item figcaption h4 small {
+  color: #303030;
+}
+.my-gallery__item:nth-of-type(2) figcaption h4, .my-gallery__item:nth-of-type(3) figcaption h4 {
+  color: #ffffff;
+}
+.my-gallery__item:nth-of-type(2) figcaption h4 small, .my-gallery__item:nth-of-type(3) figcaption h4 small {
+  color: rgba(255, 255, 255, 0.8);
+}
+@media only screen and (min-width: 1200px) {
+  .my-gallery__item::after {
+    background-color: #ffffff;
+  }
+  .my-gallery__item:nth-of-type(2)::after {
+    background-color: #38f6b4;
+  }
+  .my-gallery__item:nth-of-type(3)::after {
+    background-color: #0c0c0c;
+  }
+}
+
+.pswp__caption__center h4 {
+  color: #ffffff;
+}
+.pswp__caption__center h4 small {
+  color: rgba(255, 255, 255, 0.8);
+}
+.pswp__caption__center p {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.pswp__bg {
+  background: rgb(24.15, 24.15, 24.15);
+}
+
+.pswp__caption, .pswp__top-bar {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.pswp__button--close {
+  background-color: #38f6b4;
+}
+
+/* ------------------------------------------------*/
+/* Gallery Colors End */
+/* ------------------------------------------------*/
+/* ------------------------------------------------*/
+/* Contact Data Colors Start */
+/* ------------------------------------------------*/
+.contact-data__item .material-icons {
+  color: #38f6b4;
+}
+.contact-data__item p {
+  color: rgba(255, 255, 255, 0.8);
+}
+.contact-data__item a {
+  color: rgba(255, 255, 255, 0.8);
+}
+.contact-data__item a::before {
+  background-color: #ffffff;
+}
+.no-touch .contact-data__item a:hover {
+  color: #ffffff;
+}
+
+/* ------------------------------------------------*/
+/* Contact Data Colors End */
+/* ------------------------------------------------*/
+/* ------------------------------------------------*/
+/* Google Map Colors Start */
+/* ------------------------------------------------*/
+#zoom-in, #zoom-out {
+  background-color: rgba(12, 12, 12, 0.4);
+  color: #38f6b4;
+  border: 2px solid #38f6b4;
+}
+
+/* ------------------------------------------------*/
+/* Google Map Colors End */
+/* ------------------------------------------------*/
+/* ------------------------------------------------*/
+/* Popup Forms Colors Start */
+/* ------------------------------------------------*/
+.notify {
+  background-color: rgb(24.15, 24.15, 24.15);
+}
+.notify .popup__title .title {
+  color: #ffffff;
+}
+.notify .popup__content {
+  background-color: rgb(24.15, 24.15, 24.15);
+}
+
+.writealine {
+  background-color: #0c0c0c;
+}
+
+/* ------------------------------------------------*/
+/* Popup Forms Colors End */
+/* ------------------------------------------------*/
