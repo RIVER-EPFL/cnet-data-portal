@@ -126,48 +126,6 @@ toolsTabUI <- function(id, pool) {
     ),
     tabPanel(
       # Tab title
-      'Alkalinity',
-      # Tab content
-      toolsLayoutUI(
-        ns('alkalinityTool'),
-        'Alkalinity',
-        instructionsPanelUIArgs = list(
-          instructionsUI = htmlTemplate('./html_components/tool_alkalinity_info.html'),
-          initStateHidden = TRUE
-        )
-      ),
-      value = ns('alkalinityTool')
-    ),
-    tabPanel(
-      # Tab title
-      'CO2 air',
-      # Tab content
-      toolsLayoutUI(
-        ns('co2AirTool'),
-        'CO2 air',
-        instructionsPanelUIArgs = list(
-          instructionsUI = htmlTemplate('./html_components/tool_co2air_info.html'),
-          initStateHidden = TRUE
-        )
-      ),
-      value = ns('co2AirTool')
-    ),
-    tabPanel(
-      # Tab title
-      'pCO2',
-      # Tab content
-      toolsLayoutUI(
-        ns('pCO2Tool'),
-        'pCO2',
-        instructionsPanelUIArgs = list(
-          instructionsUI = htmlTemplate('./html_components/tool_pco2_info.html'),
-          initStateHidden = TRUE
-        )
-      ),
-      value = ns('pCO2Tool')
-    ),
-    tabPanel(
-      # Tab title
       'DIC',
       # Tab content
       toolsLayoutUI(
@@ -207,6 +165,48 @@ toolsTabUI <- function(id, pool) {
         )
       ),
       value = ns('nutrientsTool')
+    ),
+    tabPanel(
+      # Tab title
+      'Alkalinity',
+      # Tab content
+      toolsLayoutUI(
+        ns('alkalinityTool'),
+        'Alkalinity',
+        instructionsPanelUIArgs = list(
+          instructionsUI = htmlTemplate('./html_components/tool_alkalinity_info.html'),
+          initStateHidden = TRUE
+        )
+      ),
+      value = ns('alkalinityTool')
+    ),
+    tabPanel(
+      # Tab title
+      'CO2 air',
+      # Tab content
+      toolsLayoutUI(
+        ns('co2AirTool'),
+        'CO2 air',
+        instructionsPanelUIArgs = list(
+          instructionsUI = htmlTemplate('./html_components/tool_co2air_info.html'),
+          initStateHidden = TRUE
+        )
+      ),
+      value = ns('co2AirTool')
+    ),
+    tabPanel(
+      # Tab title
+      'pCO2',
+      # Tab content
+      toolsLayoutUI(
+        ns('pCO2Tool'),
+        'pCO2',
+        instructionsPanelUIArgs = list(
+          instructionsUI = htmlTemplate('./html_components/tool_pco2_info.html'),
+          initStateHidden = TRUE
+        )
+      ),
+      value = ns('pCO2Tool')
     ),
     tabPanel(
       # Tab title
@@ -267,21 +267,6 @@ toolsTab <- function(input, output, session, pool, userRole) {
              instructionPanel = TRUE, updateVerification = userRole == 'intern',
              createNew = FALSE, canUpdate = userRole %in% c('sber', 'admin'))
   
-  # Call the tools layout module with the Alkalinity tool
-  callModule(toolsLayout, 'alkalinityTool', alkalinityTool, alkalinityToolUI, pool,
-             instructionPanel = TRUE, updateVerification = userRole == 'intern',
-             createNew = FALSE, canUpdate = userRole %in% c('sber', 'admin'))
-  
-  # Call the tools layout module with the CO2 air tool
-  callModule(toolsLayout, 'co2AirTool', co2AirTool, co2AirToolUI, pool,
-             instructionPanel = TRUE, updateVerification = userRole == 'intern',
-             createNew = FALSE, canUpdate = userRole %in% c('sber', 'admin'))
-  
-  # Call the tools layout module with the CO2 air tool
-  callModule(toolsLayout, 'pCO2Tool', pCO2Tool, pCO2ToolUI, pool,
-             instructionPanel = TRUE, updateVerification = userRole == 'intern',
-             createNew = FALSE, canUpdate = userRole %in% c('sber', 'admin'))
-  
   # Call the tools layout module with the DIC tool
   callModule(toolsLayout, 'dicTool', dicTool, dicToolUI, pool,
              instructionPanel = TRUE, updateVerification = userRole == 'intern',
@@ -294,6 +279,21 @@ toolsTab <- function(input, output, session, pool, userRole) {
   
   # Call the tools layout module with the nutrients tool
   callModule(toolsLayout, 'nutrientsTool', nutrientsTool, nutrientsToolUI, pool,
+             instructionPanel = TRUE, updateVerification = userRole == 'intern',
+             createNew = FALSE, canUpdate = userRole %in% c('sber', 'admin'))
+  
+  # Call the tools layout module with the Alkalinity tool
+  callModule(toolsLayout, 'alkalinityTool', alkalinityTool, alkalinityToolUI, pool,
+             instructionPanel = TRUE, updateVerification = userRole == 'intern',
+             createNew = FALSE, canUpdate = userRole %in% c('sber', 'admin'))
+  
+  # Call the tools layout module with the CO2 air tool
+  callModule(toolsLayout, 'co2AirTool', co2AirTool, co2AirToolUI, pool,
+             instructionPanel = TRUE, updateVerification = userRole == 'intern',
+             createNew = FALSE, canUpdate = userRole %in% c('sber', 'admin'))
+  
+  # Call the tools layout module with the CO2 air tool
+  callModule(toolsLayout, 'pCO2Tool', pCO2Tool, pCO2ToolUI, pool,
              instructionPanel = TRUE, updateVerification = userRole == 'intern',
              createNew = FALSE, canUpdate = userRole %in% c('sber', 'admin'))
   
