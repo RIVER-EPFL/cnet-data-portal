@@ -1,11 +1,13 @@
 // ####################################
-// Global Sass variables
+// Global Sass variables - Updated to match CNET website
 // ####################################
 
+// Primary CNET colors
 $primary-color: #e24727;
 $secondary-color: #2f4e72;
+$accent-color: #38f6b4; // Bright green accent from website
 $white: #fff;
-$black: #0b0e13;
+$black: #0c0c0c; // Dark background from website
 $grey1: #252d3a;
 $grey2: #36455e;
 $grey3: #586885;
@@ -14,3 +16,20 @@ $grey5: #a3b2ce;
 $red: #eb1919;
 $orange: #f79d17;
 $green: #3ba51a;
+
+// CNET website specific colors
+$cnet-dark-bg: #0c0c0c;
+$cnet-light-text: rgba(255, 255, 255, 0.8);
+$cnet-selection-bg: rgb(60.6, 60.6, 60.6);
+$cnet-gradient-start: #f0f2f5;
+$cnet-gradient-end: #ebeff2;
+
+// Typography
+$font-family-primary: 'Open Sans', 'Poppins', sans-serif;
+$font-family-secondary: 'Poppins', sans-serif;
+
+// Layout
+$sidebar-width: 250px;
+$border-radius: 8px;
+$box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+$transition-speed: 0.3s;
