@@ -204,6 +204,8 @@ ui <- tagList(
   tags$head(
     # Add link to main.css stylesheet
     tags$link(href = STYLESHEET_FILE, rel = 'stylesheet', type = 'text/css'),
+    # Add CNET theme CSS
+    tags$link(href = 'cnet-theme.css', rel = 'stylesheet', type = 'text/css'),
     # Add link for js script
     tags$script(src = JAVASCRIPT_FILE)
   ),
