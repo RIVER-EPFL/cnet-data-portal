@@ -1,26 +1,74 @@
 // ####################################
-// Shiny navbar style overriding
+// Shiny navbar style overriding - CNET website style
 // ####################################
 
 .navbar {
-    background-color: $grey5;
+    background: linear-gradient(180deg, $cnet-gradient-start 0%, $cnet-gradient-end 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     margin: 0;
     border: none;
+    padding: 1rem 2rem;
+    box-shadow: $box-shadow;
+
+    .navbar-brand {
+        color: $primary-color !important;
+        font-weight: 600;
+        font-size: 2rem;
+        
+        &:hover {
+            color: $accent-color !important;
+        }
+    }
 
     .navbar-nav > .active > a,
     .navbar-nav > .active > a:focus,
     .navbar-nav > .active > a:hover {
-        background-color: $grey3;
-        color: $primary-color;
+        background-color: $primary-color;
+        color: $white;
         cursor: default;
+        border-radius: $border-radius;
+        transition: all $transition-speed ease;
     }
     
     .navbar-nav > li > a {
         color: $grey1;
+        font-weight: 500;
+        padding: 1rem 1.5rem;
+        border-radius: $border-radius;
+        transition: all $transition-speed ease;
 
         &:hover, &:focus {
-            background-color: $grey4;
-            color: $grey2;    
+            background-color: rgba(226, 71, 39, 0.1);
+            color: $primary-color;
+            transform: translateY(-1px);
+        }
+        
+        .navbar-menu-name {
+            margin-left: 0.5rem;
+        }
+    }
+    
+    // Navbar toggle button for mobile
+    .navbar-toggle {
+        border-color: $primary-color;
+        
+        .icon-bar {
+            background-color: $primary-color;
+        }
+        
+        &:hover, &:focus {
+            background-color: rgba(226, 71, 39, 0.1);
+        }
+    }
+}
+
+// Mobile responsive navbar
+@media (max-width: 768px) {
+    .navbar {
+        padding: 1rem;
+        
+        .navbar-nav > li > a {
+            padding: 0.75rem 1rem;
         }
     }
 }
