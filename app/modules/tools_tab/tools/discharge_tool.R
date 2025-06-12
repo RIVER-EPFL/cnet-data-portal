@@ -23,7 +23,7 @@ dischargeToolUI <- function(id, pool, ...) {
       style = 'margin-bottom: 30px;',
       div(
         class = 'panel-heading',
-        h4('1. Upload Data File', class = 'panel-title')
+        h4('1. Upload Data File & Select Site/Date', class = 'panel-title')
       ),
       div(
         class = 'panel-body',
@@ -35,7 +35,49 @@ dischargeToolUI <- function(id, pool, ...) {
                      buttonLabel = 'Browse...',
                      placeholder = 'No file selected')
           ),
-          column(9,
+          column(3,
+            # Station selection (matching DOC tool pattern)
+            selectInput(
+              ns('site'),
+              'Station',
+              choices = c(
+                'Choose a station ...' = '',
+                parseOptions(
+                  getRows(pool, 'stations', columns = c('order', 'name')) %>%
+                  arrange(order) %>% select(-order),
+                  'name'
+                )
+              )
+            ),
+            # Date selection (matching DOC tool pattern)
+            selectInput(
+              ns('date'),
+              'Date',
+              choices = c(
+                'Choose a date ...' = ''
+              )
+            )
+          ),
+          column(3,
+            # Display WTW_Temp_degC_1 parameter
+            div(
+              class = 'parameter-display',
+              h5('Water Temperature', style = 'margin-bottom: 10px; color: #6c757d;'),
+              div(
+                class = 'temperature-display',
+                style = 'background-color: #f8f9fa; padding: 15px; border-radius: 5px; border: 1px solid #dee2e6;',
+                div(
+                  style = 'font-size: 18px; font-weight: bold; color: #495057;',
+                  textOutput(ns('waterTemp'), inline = TRUE)
+                ),
+                div(
+                  style = 'font-size: 12px; color: #6c757d; margin-top: 5px;',
+                  'WTW_Temp_degC_1'
+                )
+              )
+            )
+          ),
+          column(3,
             # Data table preview
             div(
               class = 'file-preview-container',
@@ -147,44 +189,19 @@ dischargeToolUI <- function(id, pool, ...) {
       style = 'margin-bottom: 30px;',
       div(
         class = 'panel-heading',
-        h4('4. Update Database (Q_Ls Parameter)', class = 'panel-title')
+        h4('4. Update Database (Q_Ls Parameter for Selected Site/Date)', class = 'panel-title')
       ),
       div(
         class = 'panel-body',
         fluidRow(
-          column(3,
-            # Station selection (matching DOC tool pattern)
-            selectInput(
-              ns('site'),
-              'Station',
-              choices = c(
-                'Choose a station ...' = '',
-                parseOptions(
-                  getRows(pool, 'stations', columns = c('order', 'name')) %>%
-                  arrange(order) %>% select(-order),
-                  'name'
-                )
-              )
-            )
-          ),
-          column(3,
-            # Date selection (matching DOC tool pattern)
-            selectInput(
-              ns('date'),
-              'Date',
-              choices = c(
-                'Choose a date ...' = ''
-              )
-            )
-          ),
-          column(3,
+          column(6,
             numericInput(ns('q_ls'), 'Q_Ls (L/s)',
                         value = NULL,
                         min = 0,
                         step = 0.001,
                         width = '100%')
           ),
-          column(3,
+          column(6,
             div(
               style = 'margin-top: 25px;',
               div(
@@ -615,6 +632,34 @@ dischargeTool <- function(input, output, session, pool, site, datetime, ...) {
     }, error = function(e) {
       session$sendCustomMessage("console", list(message = paste("Error loading dates:", e$message)))
       updateSelectInput(session, 'date', choices = c('Error loading dates' = ''))
+    })
+  })
+  
+  # Display water temperature when site and date are selected
+  output$waterTemp <- renderText({
+    req(input$site, input$date)
+    
+    if (input$site == '' || input$date == '') {
+      return("Select site & date")
+    }
+    
+    tryCatch({
+      # Get water temperature for selected site and date
+      selected_site <- input$site
+      selected_date <- input$date
+      
+      temp_data <- getRows(pool, 'data',
+                          station == selected_site,
+                          DATE_reading == selected_date,
+                          columns = 'WTW_Temp_degC_1')
+      
+      if (nrow(temp_data) > 0 && !is.na(temp_data$WTW_Temp_degC_1)) {
+        paste(round(temp_data$WTW_Temp_degC_1, 1), "°C")
+      } else {
+        "No data"
+      }
+    }, error = function(e) {
+      "Error loading"
     })
   })
   
