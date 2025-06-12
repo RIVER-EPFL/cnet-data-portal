@@ -39,8 +39,7 @@ dischargeToolUI <- function(id, pool, ...) {
               style = 'margin-top: 10px;',
               actionButton(ns('reset'), 'Reset Tool', 
                           class = 'btn btn-warning btn-sm',
-                          icon = icon('refresh'),
-                          style = 'width: 100%;')
+                          icon = icon('refresh'))
             )
           ),
           column(3,
