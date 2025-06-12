@@ -33,7 +33,15 @@ dischargeToolUI <- function(id, pool, ...) {
             fileInput(ns('dataFile'), 'Choose CSV File',
                      accept = c('.csv'),
                      buttonLabel = 'Browse...',
-                     placeholder = 'No file selected')
+                     placeholder = 'No file selected'),
+            # Reset button
+            div(
+              style = 'margin-top: 10px;',
+              actionButton(ns('reset'), 'Reset Tool', 
+                          class = 'btn btn-warning btn-sm',
+                          icon = icon('refresh'),
+                          style = 'width: 100%;')
+            )
           ),
           column(3,
             # Station selection (matching DOC tool pattern)
@@ -363,6 +371,35 @@ dischargeTool <- function(input, output, session, pool, site, datetime, ...) {
     checked = FALSE,
     dbError = NULL
   )
+  
+  ## Reset button logic ##########################################################
+  
+  # Reset tool when reset button is clicked
+  observeEvent(input$reset, {
+    # Clear reactive values
+    values$data <- NULL
+    values$results <- NULL
+    values$plots <- NULL
+    values$checked <- FALSE
+    values$dbError <- NULL
+    
+    # Reset file input (this will trigger file upload logic to clear preview)
+    # Note: fileInput cannot be directly reset, but clearing values$data will clear the preview
+    
+    # Reset site and date selections
+    updateSelectInput(session, 'site', selected = '')
+    updateSelectInput(session, 'date', choices = c('Choose a date ...' = ''), selected = '')
+    
+    # Reset Q_Ls input
+    updateNumericInput(session, 'q_ls', value = NA)
+    
+    # Show notification
+    showNotification('Discharge tool has been reset. You can now upload a new CSV file.', 
+                    type = 'message', duration = 3)
+    
+    # Add debug message
+    session$sendCustomMessage("console", list(message = "Discharge tool reset completed"))
+  })
   
   ## File upload handling #########################################################
   
