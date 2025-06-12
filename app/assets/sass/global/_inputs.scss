@@ -1,57 +1,44 @@
 // ####################################
-// Shiny button style overriding - CNET website style
+// Shiny button style overriding
 // ####################################
 
 .btn.custom-style {
-    color: $white;
+    color: $secondary-color;
     cursor: pointer;
-    font-weight: 500;
-    padding: 0.75rem 1.5rem;
-    border-radius: $border-radius;
-    border: 1px solid transparent;
-    transition: all $transition-speed ease;
-    font-family: $font-family-primary;
+    font-variant: small-caps;
 
     &:hover,
     &:focus {
-        color: $white;
-        background: rgba(56, 246, 180, 0.1);
-        border-color: $accent-color;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(56, 246, 180, 0.2);
+        color: $primary-color;
+        background: lighten($grey5, 20);
     }
 
     &:active {
-        color: $white;
-        background: $accent-color;
-        transform: translateY(0);
+        color: $primary-color;
+        background: $grey5;
     }
 
     &:disabled {
-        color: $grey4;
-        background: $grey2;
+        color: $secondary-color;
+        background: none;
         cursor: not-allowed;
-        opacity: 0.6;
     }
 
     &--primary {
         color: $white;
         background: $primary-color;
-        border: 1px solid $primary-color;
+        border: 1px solid darken($primary-color, 10);
 
         &:hover,
         &:focus {
             color: $white;
             background: darken($primary-color, 7);
-            border: 1px solid darken($primary-color, 7);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(226, 71, 39, 0.3);
+            border: 1px solid darken($primary-color, 15);
         }
     
         &:active {
-            color: $white;
+            color: $secondary-color;
             background: darken($primary-color, 10);
-            transform: translateY(0);
         }
 
         &:disabled,
@@ -60,129 +47,53 @@
             pointer-events: auto;
             color: $white;
             background: $primary-color;
-            border: 1px solid $primary-color;
-            opacity: 0.6;
-        }
-    }
-    
-    &--secondary {
-        color: $primary-color;
-        background: transparent;
-        border: 1px solid $primary-color;
-        
-        &:hover,
-        &:focus {
-            color: $white;
-            background: $primary-color;
-            border: 1px solid $primary-color;
+            border: 1px solid darken($primary-color, 10);
         }
     }
 }
 
 // ####################################
-// Form inputs - CNET website style
-// ####################################
-
-.form-control {
-    background-color: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: $border-radius;
-    color: $white;
-    padding: 0.75rem 1rem;
-    transition: all $transition-speed ease;
-    
-    &:focus {
-        background-color: rgba(255, 255, 255, 0.1);
-        border-color: $accent-color;
-        box-shadow: 0 0 0 2px rgba(56, 246, 180, 0.2);
-        color: $white;
-    }
-    
-    &::placeholder {
-        color: $grey4;
-    }
-}
-
-// ####################################
-// Shiny select input style overriding - CNET style
+// Shiny select input style overriding
 // ####################################
 
 .selectize-dropdown,
 .selectize-input,
 .selectize-input input {
-    color: $white;
-    background-color: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: $border-radius;
-}
-
-.selectize-dropdown {
-    background-color: $grey1;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: $box-shadow;
+    color: $secondary-color;
 }
 
 .selectize-dropdown .optgroup-header {
-    color: $accent-color;
-    background-color: rgba(56, 246, 180, 0.1);
-}
-
-.selectize-dropdown .option {
-    color: $white;
-    
-    &:hover,
-    &.active {
-        background-color: $primary-color;
-        color: $white;
-    }
+    color: $primary-color;
 }
 
 .selectize-control.multi .selectize-input > div,
 .selectize-control.multi .selectize-input > div.active {
     background: $primary-color;
     color: $white;
-    border-radius: 4px;
     
     .remove {
-        color: rgba(255, 255, 255, 0.7);
-        
-        &:hover {
-            color: $white;
-        }
+        color: $secondary-color;
     }
 }
 
 // ####################################
-// Shiny datepicker style overriding - CNET style
+// Shiny datepicker style overriding
 // ####################################
 
 .input-daterange {
     .form-control {
-        color: $white;
-        background-color: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: $secondary-color;
     }
 }
 
 .datepicker {
-    background-color: $grey1;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: $box-shadow;
-    
     .datepicker-switch,
     .prev, .next {
-        color: $accent-color;
-        background-color: transparent;
-        
-        &:hover {
-            background-color: rgba(56, 246, 180, 0.1);
-        }
+        color: $primary-color;
     }
 
     table tr td,
     table tr td span {
-        color: $white;
-        
         &.active {
             &.active,
             &.highlighted,
@@ -200,7 +111,6 @@
             &:active:hover,
             &.active:hover.active:hover {
                 background: $primary-color;
-                color: $white;
             }
         }
     }
@@ -209,37 +119,34 @@
     .day, .month, .year, .decade, .century,
     table tr td.day {
         &:hover {
-            background: rgba(56, 246, 180, 0.1);
-            color: $accent-color;
+            background: lighten($grey5, 20);
+            color: $primary-color;
         }
     }
 
     table tr td.day.disabled:hover {
         background: none;
-        color: $grey4;
     }
 }
 
 // ####################################
-// Custom icon only button - CNET style
+// Custom icon only button
 // ####################################
 
 .icon-btn {
     border: none;
     background: none;
-    padding: 0.5rem;
-    color: $accent-color;
-    border-radius: $border-radius;
-    transition: all $transition-speed ease;
+    padding: 0;
+    color: $primary-color;
 
     &:hover,
     &:focus,
     &:active {
-        color: $white;
-        background: rgba(56, 246, 180, 0.1);
-        transform: scale(1.1);
+        color: $secondary-color;
+        background: none;
     }
 }
+
 
 // ####################################
 // Custom checkbox input group layout
