@@ -16,6 +16,7 @@ source('./modules/tools_tab/tools/ions_tool.R')
 source('./modules/tools_tab/tools/nutrients_tool.R')
 source('./modules/tools_tab/tools/tss_afdm_tool.R')
 source('./modules/tools_tab/tools/chla_tool.R')
+source('./modules/tools_tab/tools/rating_curves_tool.R')
 # Conditionally source discharge tool only if required packages are available
 if ((exists("discharge_packages_available", envir = .GlobalEnv) && get("discharge_packages_available", envir = .GlobalEnv)) ||
     (exists("discharge_packages_available") && discharge_packages_available)) {
@@ -96,6 +97,13 @@ toolsTabUI <- function(id, pool) {
       value = ns('fieldDataTool')
     ),
     create_discharge_tab(ns, pool),
+    tabPanel(
+      # Tab title
+      'Rating Curves',
+      # Tab content
+      ratingCurvesToolUI(ns('ratingCurvesTool'), pool),
+      value = ns('ratingCurvesTool')
+    ),
     tabPanel(
       # Tab title
       'DOC',
@@ -306,6 +314,9 @@ toolsTab <- function(input, output, session, pool, userRole) {
   callModule(toolsLayout, 'chlaTool', chlaTool, chlaToolUI, pool,
              instructionPanel = TRUE, updateVerification = userRole == 'intern',
              createNew = FALSE, canUpdate = userRole %in% c('sber', 'admin'))
+  
+  # Call the rating curves tool directly
+  callModule(ratingCurvesTool, 'ratingCurvesTool', pool = pool)
   
   # Call the discharge tool directly (no database connection needed)
   # Check for packages availability with robust global environment check
