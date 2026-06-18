@@ -33,6 +33,9 @@ visualisationTabUI <- function(id, pool, hfDf) {
   grabMinMaxDates <- getMinMaxValues(pool, 'data', DATE_reading) %>%
     mutate(across(everything(), ymd))
   
+  # Always allow selecting dates up to today
+  grabMinMaxDates$max <- Sys.Date()
+  
   # Create a tabsetPanel to create sub navigation
   tabsetPanel(
     id = ns('visuTabs'),
@@ -60,7 +63,7 @@ visualisationTabUI <- function(id, pool, hfDf) {
       sidebarInputLayoutUI(
         ns('sensorsTimeseries'),
         minDate = if(nrow(hfDf$`24H`) > 0 && any(!is.na(hfDf$`24H`$Date))) min(hfDf$`24H`$Date, na.rm = TRUE) else as.Date("2024-01-01"),
-        maxDate = if(nrow(hfDf$`24H`) > 0 && any(!is.na(hfDf$`24H`$Date))) max(hfDf$`24H`$Date, na.rm = TRUE) else Sys.Date(),
+        maxDate = Sys.Date(),
         innerModuleUI = highFreqTimeSeriesUI,
         pool = pool
       ),
@@ -89,6 +92,9 @@ visualisationTab <- function(input, output, session, pool, user, hfDf) {
   grabMinMaxDates <- getMinMaxValues(pool, 'data', DATE_reading) %>%
     mutate(across(everything(), ymd))
   
+  # Always allow selecting dates up to today
+  grabMinMaxDates$max <- Sys.Date()
+  
   # For sensors
   hfMinMaxDates <- list(
     min = if(nrow(hfDf$`24H`) > 0 && any(!is.na(hfDf$`24H`$Date))) {
@@ -99,14 +105,8 @@ visualisationTab <- function(input, output, session, pool, user, hfDf) {
       runjs("console.log('Visualisation tab: Using fallback hf min date: 2024-01-01');")
       as.Date("2024-01-01")
     },
-    max = if(nrow(hfDf$`24H`) > 0 && any(!is.na(hfDf$`24H`$Date))) {
-      maxVal <- max(hfDf$`24H`$Date, na.rm = TRUE)
-      runjs(paste0("console.log('Visualisation tab: Calculated hf max date: ", maxVal, "');"))
-      maxVal
-    } else {
-      runjs("console.log('Visualisation tab: Using fallback hf max date: today');")
-      Sys.Date()
-    }
+    # Always allow selecting dates up to today
+    max = Sys.Date()
   )
   
   
