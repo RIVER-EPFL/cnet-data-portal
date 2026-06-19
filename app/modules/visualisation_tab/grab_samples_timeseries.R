@@ -30,7 +30,8 @@ grabSamplesTimeSeriesUI <- function(id, pool) {
           getRows(pool, 'stations', columns = c('order', 'catchment')) %>%
             arrange(order) %>% select(-order),
           'catchment'
-        )
+        ),
+        selected = 'Stations'
       ),
       # Create an empty checkbox group input for station selection
       # Will update dynamically in function of the catchment
